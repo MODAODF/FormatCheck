@@ -1,0 +1,1 @@
+[FormatCheck] Check whether the preset values of the layout in the ODF file are correct.

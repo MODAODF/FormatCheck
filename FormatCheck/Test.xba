@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Test" script:language="StarBasic" script:moduleType="normal">sub changePrinter
+	Dim Props 
+	props = ThisComponent.getPrinter()
+	DIM mPrinterOpts(1) AS NEW com.sun.star.beans.PropertyValue
+	mPrinterOpts(0).Name = &quot;PaperFormat&quot;
+	mPrinterOpts(0).Value = com.sun.star.view.PaperFormat.USER
+	ThisComponent.setPrinter(mPrinterOpts)
+end sub
+
+
+
+Sub DisplayPagePrintProperties
+  Dim Props  &apos;Array of com.sun.star.beans.PropertyValue
+  Dim i%     &apos;Index variable of type Integer
+  Dim s$     &apos;Display string
+  If HasUnoInterfaces(ThisComponent, &quot;com.sun.star.text.XPagePrintable&quot;) Then
+    Props = ThisComponent.getPagePrintSettings()
+    For i = 0 To UBound(Props)
+      s = s &amp; props(i).Name &amp; &quot;  =  &quot; &amp; CStr(props(i).Value) &amp; CHR$(10)
+    Next
+    MsgBox s, 0, &quot;Page Print Properties&quot;
+  Else
+    Print &quot;Sorry, this document does not support the XPagePrintable interface&quot;
+  End If
+End Sub
+
+Sub PrintAllPrinterNames()
+  Dim oPrintServer &apos; The print server service.
+  Dim oCore        &apos; Get classes and other objects by name.
+  Dim oClass       &apos; XPrinterServer class object.
+  Dim oMethod      &apos; getPrinterNames method from the XPrinterServer class.
+  Dim aNames       &apos; List of printer names.
+  
+  &apos; Create the object that will not be directly usable until OOo 3.5.
+  oPrintServer = CreateUnoService(&quot;com.sun.star.awt.PrinterServer&quot;)
+  oCore = CreateUnoService(&quot;com.sun.star.reflection.CoreReflection&quot;)
+  
+  &apos; Get the class object for the XPrinterServer interface.
+  oClass = oCore.forName(&quot;com.sun.star.awt.XPrinterServer&quot;)
+  
+  &apos; Get the getPrinterNames method for the XPrinterServer class.
+  oMethod = oClass.getMethod(&quot;getPrinterNames&quot;)
+  
+  &apos; Call the getPrinterNames method on the PrinterServer object.
+  aNames = oMethod.invoke(oPrintServer, Array()) 
+  MsgBox Join(aNames, CHR$(10))
+End Sub
+
+Sub DisplayPrinterProperties
+  Dim Props  &apos;Array of com.sun.star.beans.PropertyValue
+  Dim i%     &apos;Index variable of type Integer
+  Dim s$     &apos;Display string
+  Dim v      &apos;
+  Dim sName$ &apos;
+  On Error Resume Next
+  Props = ThisComponent.getPrinter()
+  For i = 0 To UBound(Props)
+    sName = props(i).Name
+    v = props(i).Value
+    s = s &amp; sName &amp; &quot;  =  &quot;
+    If sName = &quot;PaperOrientation&quot; Then
+      REM com.sun.star.view.PaperOrientation.LANDSCAPE also supported
+      s = s &amp; IIf(v=com.sun.star.view.PaperOrientation.PORTRAIT,_
+              &quot;Portrait&quot;, &quot;Landscape&quot;) &amp; &quot;  =  &quot; &amp; CStr(v)
+    ElseIf sName = &quot;PaperFormat&quot; Then
+      Select Case v
+        Case com.sun.star.view.PaperFormat.A3
+          s = s &amp; &quot;A3&quot;
+        Case com.sun.star.view.PaperFormat.A4
+          s = s &amp; &quot;A4&quot;
+        Case com.sun.star.view.PaperFormat.A5
+          s = s &amp; &quot;A5&quot;
+        Case com.sun.star.view.PaperFormat.B4
+          s = s &amp; &quot;B4&quot;
+        Case com.sun.star.view.PaperFormat.B5
+          s = s &amp; &quot;B5&quot;
+        Case com.sun.star.view.PaperFormat.LETTER
+          s = s &amp; &quot;LETTER&quot;
+        Case com.sun.star.view.PaperFormat.LEGAL
+          s = s &amp; &quot;LEGAL&quot;
+        Case com.sun.star.view.PaperFormat.TABLOID
+          s = s &amp; &quot;TABLOID&quot;
+        Case com.sun.star.view.PaperFormat.USER
+          s = s &amp; &quot;USER&quot;
+        Case Else
+          s = s &amp; &quot;Unknown value&quot;
+      End Select
+      s = s &amp; &quot;  =  &quot; &amp; CStr(v)
+    ElseIf sName = &quot;PaperSize&quot; Then
+      REM type is com.sun.star.awt.Size
+      REM The size is in TWIPS and there are 1440 twips per inch
+      s=s &amp; CDbl(v.Width)/1440.0 &amp; &quot;x&quot; &amp; CDbl(v.Height)/1440.0 &amp; &quot; (inches)&quot;
+    Else
+      s = s &amp; CStr(v)
+    End If
+    s = s &amp; CHR$(10)
+  Next
+ 
+  MsgBox s, 0, &quot;Printer Properties&quot;
+ 
+End Sub
+
+Sub TextFieldInCurrentParagraph
+  Dim oEnum         &apos;Cursor enumerator
+  Dim oSection      &apos;Current section
+  Dim oViewCursor   &apos;Current view cursor
+  Dim oTextCursor   &apos;Created text cursor
+  Dim oText         &apos;Text object in current document
+  Dim s$
+  Dim sTextContent$ &apos;Service name for text content.
+  sTextContent = &quot;com.sun.star.text.TextContent&quot;
+  
+  oText = ThisComponent.Text
+  oViewCursor = ThisComponent.CurrentController.getViewCursor()
+  
+  REM Obtain the view cursor, and then select the paragraph
+  REM containing the view cursor.
+  oTextCursor = oText.createTextCursorByRange(oViewCursor)
+  
+  REM Move to the start of the paragraph as a single point.
+  oTextCursor.gotoStartOfParagraph(False)
+  REM Move to the end of the current paragraph and expand the
+  REM selection so that the entire paragraph is selected.
+  oTextCursor.gotoEndOfParagraph(True)
+  
+  REM I want to enumerate the text content contained by this text cursor.
+  REM Although this will find inserted drawing objects, such as the shape
+  REM used by a button, it will not find a text field!
+  oEnum = oTextCursor.createContentEnumeration(sTextContent)
+  Do While oEnum.hasMoreElements()
+    oSection = oEnum.nextElement()
+    Print &quot;Enumerating TextContent: &quot; &amp; oSection.ImplementationName
+  Loop
+
+  REM And this enumerates the paragraphs that are contained in
+  REM the text cursor.
+  oEnum = oTextCursor.createEnumeration()
+  Dim v
+  Do While oEnum.hasMoreElements()
+    v = oEnum.nextElement()
+    Dim oSubSection
+    Dim oSecEnum
+    
+    REM Now create an enumeration of the paragraphs.
+    REM We can enumerate the sections of the paragraph to 
+    REM obtain the text field and other paragraph content.
+    oSecEnum = v.createEnumeration()
+    s = &quot;Enumerating section type: &quot; &amp; v.ImplementationName
+    Do While oSecEnum.hasMoreElements()
+        oSubSection = oSecEnum.nextElement()
+        s = s &amp; CHR$(10) &amp; oSubSection.TextPortionType
+        If oSubSection.TextPortionType = &quot;TextField&quot; Then
+          s = s &amp; &quot; &lt;== Type &quot; &amp; oSubSection.TextField.ImplementationName
+        End If
+    Loop
+    MsgBox s, 0, &quot;Enumerate Single Paragraph&quot;
+  Loop
+  
+  REM And this is yet another way to find the text field.
+  REM Start at the beginning of the paragraph and then move the cursor
+  REM through it, looking for text fields.
+  oTextCursor.gotoStartOfParagraph(False)
+  Do While oTextCursor.goRight(1, False) AND _
+       NOT oTextCursor.isEndOfParagraph()
+    If NOT IsEmpty(oTextCursor.TextField) Then
+      Print &quot;It is NOT empty, you can use the text field&quot;
+    End If
+  Loop  
+End Sub
+
+Sub test
+	Dim Obj As Object
+	dim cCom as object
+	StarDesktop.CurrentComponent
+	Obj = createUnoService(&quot;com.sun.star.frame.Desktop&quot;)
+	 
+	MsgBox Obj.DBG_Properties
+	MsgBox Obj.DBG_methods
+end sub
+
+Function IsAnythingSelected(oDoc As Object) As Boolean
+  Dim oSelections &apos;Contains all of the selections
+  Dim oSel        &apos;Contains one specific selection
+  Dim oCursor     &apos;Text cursor to check for a collapsed range  
+  REM Assume nothing is selected
+  IsAnythingSelected = False
+  If IsNull(oDoc) Then Exit Function
+  &apos; The current selection in the current controller. 
+  &apos;If there is no current controller, it returns NULL.
+  oSelections = oDoc.getCurrentSelection()
+  If IsNull(oSelections) Then Exit Function
+  If oSelections.getCount() = 0 Then Exit Function
+  If oSelections.getCount() &gt; 1 Then
+    REM There is more than one selection so return True
+    IsAnythingSelected = True
+  Else
+    REM There is only one selection so obtain the first selection
+    oSel = oSelections.getByIndex(0)
+    
+    REM Create a text cursor that covers the range and then see if it is
+    REM collapsed.
+    oCursor = oDoc.Text.CreateTextCursorByRange(oSel)
+    If Not oCursor.IsCollapsed() Then IsAnythingSelected = True
+
+    REM You can also compare these to see if the selection starts and ends at
+    REM the same location.
+    REM If oDoc.Text.compareRegionStarts(oSel.getStart(),_
+    REM      oSel.getEnd()) &lt;&gt; 0 Then
+    REM  IsAnythingSelected = True
+    REM End If
+  End If
+End Function
+
+Sub LineBreaksInParagraph
+  Dim oText       &apos;Save typing ThisComponent.Text
+  Dim oViewCursor &apos;Save typing
+  ThisComponent.CurrentController.getViewCursor()
+  Dim oTextCursor &apos;Created text cursor
+  Dim oSaveCursor &apos;In case I want to restore the view cursor
+  
+  oText = ThisComponent.Text
+  
+  REM You require a view cursor 
+  REM because only the view knows where a line ends.
+  oViewCursor = ThisComponent.CurrentController.getViewCursor()
+  
+  REM You require a text cursor so that you know where the paragraph ends.
+  REM Too bad the view cursor is not a paragraph cursor.
+  oTextCursor = oText.createTextCursorByRange(oViewCursor)
+  
+  REM You only need this if you want to restore the view cursor
+  oSaveCursor = oText.createTextCursorByRange(oViewCursor)
+
+  REM Move the cursor to the start of the current paragraph
+  REM so that the entire paragraph can be processed.
+  If NOT oTextCursor.isStartOfParagraph() Then
+    oTextCursor.gotoStartOfParagraph(False)
+    oViewCursor.gotoRange(oTextCursor, False)
+  End If
+  REM Now visit each line of the paragraph.
+  Do While True
+    REM Only the view cursor knows where the end of the line is
+    REM because this is a formatting issue and not determined by
+    REM punctuation.
+    oViewCursor.gotoEndOfLine(false)
+    
+    REM Move with the view cursor to the end of the current line
+    REM and then see if you&apos;re at the end of the paragraph.
+    oTextCursor.gotoRange(oViewCursor, False)
+    
+    REM Check for end of paragraph BEFORE inserting the line break.
+    If oTextCursor.isEndOfParagraph() Then Exit Do
+    
+    REM Insert a line break at the current view cursor.
+    oText.insertControlCharacter(oViewCursor,_
+       com.sun.star.text.ControlCharacter.LINE_BREAK, false)
+  Loop
+  REM If you only want to move the cursor away from the end of the
+  REM current paragraph, then this will suffice.
+  oViewCursor.goRight(1, False)
+  REM I want to restore the view cursor location, however.
+  REM oViewCursor.gotoRange(oSaveCursor, False)
+End Sub
+
+Sub EnumrateAllTextTables
+  Dim oTables  &apos;All of the text tables
+  Dim s$       &apos;Work string
+  Dim i%       &apos;Index variable
+  
+  oTables = ThisComponent.TextTables  REM First, access the tables based on index.
+  s = &quot;Tables By Index&quot; &amp; CHR$(10)
+  For i = 0 To oTables.getCount() - 1
+    s = s &amp; &quot;Table &quot; &amp; (i+1) &amp; &quot; = &quot; &amp; oTables(i).Name &amp; CHR$(10)
+  Next
+  
+  s = s &amp; CHR$(10) &amp; CHR$(10) &amp; &quot;Text Tables By Name&quot; &amp; CHR$(10)
+  s = s &amp; Join(oTables.getElementNames(), CHR$(10))
+  MsgBox s, 0, &quot;Tables&quot;
+End Sub
+
+Sub InsertDeleteTable
+  Dim oTable       &apos;Newly created table to insert
+  Dim oTables      &apos;All of the text tables
+  Dim oInsertPoint &apos;Where the table will be inserted
+  Dim sTableName as String
+  
+  sTableName = &quot;SampleTable&quot;
+  oTables = ThisComponent.TextTables
+  
+  If oTables.hasByName(sTableName) Then
+    oTable = oTables.getByName(sTableName)
+    
+    REM Although this seems like the correct way to remove text content,
+    REM what if the table is not inserted into the primary document&apos;s
+    REM text object? oTable.dispose() may be safer to use.
+    ThisComponent.Text.removeTextContent(oTable)
+  Else
+
+    REM Let the document create the text table.  
+    oTable = ThisComponent.createInstance( &quot;com.sun.star.text.TextTable&quot; )
+    oTable.initialize(2, 3) &apos;Two rows, three columns
+    
+    REM If there is a bookmark named &quot;InsertTableHere&quot;, then insert
+    REM the table at that point. If this bookmark does not exist, 
+    REM then simply choose the very end of the document.
+    If ThisComponent.getBookmarks().hasByName(&quot;InsertTableHere&quot;) Then
+      oInsertPoint =_
+        ThisComponent.getBookmarks().getByName(&quot;InsertTableHere&quot;).getAnchor()
+    Else
+      oInsertPoint = ThisComponent.Text.getEnd()
+    End If
+  
+    REM Now insert the text table at the end of the document.
+    REM Note that the text object from the oInsertPoint text
+    REM range is used rather than the document text object.
+    oInsertPoint.getText().insertTextContent(oInsertPoint , oTable, False)
+                               
+    REM The setData() object method works ONLY with numerical data.
+    REM The setDataArray() object method, however, also allows strings.
+    oTable.setDataArray(Array(Array(0, &quot;One&quot;, 2), Array(3, &quot;Four&quot;, 5)))
+    oTable.setName(sTableName)
+  End If
+End Sub
+
+Sub EnumerateParStyles()
+  Dim oEnum    &apos;com.sun.star.container.XEnumerationAccess
+  Dim oCurPar  &apos;Last Paragraph object.
+  Dim s$       &apos;General string variable.
+
+  oEnum = ThisComponent.Text.createEnumeration()
+  Do While oEnum.hasMoreElements()
+    oCurPar = oEnum.nextElement()
+    s = s &amp; oCurPar.ParaStyleName &amp; CHR$(10)
+  Loop
+  MsgBox s
+End Sub
+
+Sub DisplayFields
+  oEnum = ThisComponent.getTextFields().createEnumeration()
+  Do While oEnum.hasMoreElements()
+    oField = oEnum.nextElement()
+    s = s &amp; oField.getPresentation(True)  &amp; &quot; = &quot;    &apos;Field type
+    If oField.supportsService(&quot;com.sun.star.text.TextField.Annotation&quot;) Then
+      REM More cryptic, I could use If oField.getPresentation(True) = &quot;Note&quot;...
+      REM A &quot;Note&quot; has no displayed content so calling getPresentation(False)
+      REM returns an empty string. Instead, obtain the author and the content.
+      s = s &amp; oField.Author &amp; &quot; says &quot; &amp; oField.Content
+    Else
+      s = s &amp; oField.getPresentation(False)          &apos;String content
+    End If
+    s = s &amp; CHR$(13)
+  Loop
+  MsgBox s, 0, &quot;Text Fields&quot;
+End Sub
+
+
+Sub CountWordSentPar
+  Dim oCursor
+  Dim nPars As Long
+  Dim nSentences As Long
+  Dim nWords As Long
+  
+  REM Create a text cursor.
+  oCursor = ThisComponent.Text.createTextCursor()
+  oCursor.gotoStart(False)
+  Do
+    nPars = nPars + 1
+  Loop While oCursor.gotoNextParagraph(False)
+  oCursor.gotoStart(False)
+  Do
+    nSentences = nSentences + 1
+  Loop While oCursor.gotoNextSentence(False)
+  
+  oCursor.gotoStart(False)
+  Do
+    nWords = nWords + 1
+  Loop While oCursor.gotoNextWord(False)
+  
+  MsgBox &quot;Paragraphs: &quot; &amp; nPars &amp; CHR$(10) &amp;_
+     &quot;Sentences: &quot; &amp; nSentences &amp; CHR$(10) &amp;_
+     &quot;Words: &quot; &amp; nWords &amp; CHR$(10), 0, &quot;Doc Statistics&quot;
+End Sub
+
+Sub enumerateParagraphs
+  Dim oEnum              &apos;com.sun.star.container.XEnumerationAccess
+  Dim oPar               &apos;Paragraph of some sort
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim nTables As Integer &apos;Number of tables
+  Dim temp As String
+  Dim counter as Integer
+  REM ThisComponent refers to the current OOo document
+  REM Text is a property of ThisComponent for a text document
+  REM The getText() object method returns the same thing.
+  REM createEnumeration() is an object method.
+  oEnum = ThisComponent.Text.createEnumeration()
+  Do While oEnum.hasMoreElements()
+    oPar = oEnum.nextElement()
+    REM print(oPar.DBG_methods)
+    REM The returned paragraph will be a paragraph or a text table
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+      &apos;MsgBox(oPar.DBG_methods)
+      &apos;msgbox(oPar.getString())
+      dim spaceNumber as integer
+      dim tabNumber as integer
+      dim startString 
+      dim replaceString 
+      replaceString = &quot;&quot;
+      startString = &quot;&quot;
+      temp = oPar.getString()
+      spaceNumber = 0
+      tabNumber = 0
+      for counter = 1 to Len(temp)
+      	Dim cChar
+      	cChar = mid(temp, counter, 1)
+      	if cChar = &quot; &quot; then
+ 			spaceNumber = spaceNumber+1
+ 		elseif cChar = &quot;	&quot; then 
+ 			tabNumber = tabNumber +1
+ 		else exit for
+ 		end if
+ 		startString = startString + cChar
+      next
+      
+      if spaceNumber &gt; 0 then
+      	if tabNumber &gt; 1 then
+      		msgbox tabNumber
+	      	for counter = 1 to tabNumber
+	      		replaceString = replaceString + &quot;	&quot;
+	      		msgbox counter
+	      	next
+	    else 
+	    	replaceString = &quot;	&quot;
+	    end if
+      	temp = replace(temp, startString, replaceString, 1, 1, FALSE)
+      end if
+      
+      
+      oPar.setString(temp)
+      nPars = nPars + 1
+    ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+      nTables = nTables + 1
+    End If
+  Loop
+  MsgBox CStr(nPars) &amp; &quot; Paragraph(s)&quot; &amp; CHR$(13) &amp;_
+         CStr(nTables) &amp; &quot; Table(s)&quot; &amp; CHR$(13), 0,_
+         &quot;Paragraph Types In Document&quot;
+End Sub
+
+Sub kkkk
+	msgbox &quot;hola&quot;
+end sub
+
+Sub getPropertyValues
+  Dim vPropInfo  &apos;PropertySetInfo object
+  Dim vProps     &apos;Array of properties
+  Dim vProp      &apos;com.sun.star.beans.Property
+  Dim v          &apos;Value of a single property
+  Dim i%         &apos;Index variable
+  Dim s$         &apos;General message string
+  Dim nCount%
+  
+  REM Object implements interface com.sun.star.beans.XPropertySetInfo
+  vPropInfo = ThisComponent.getPropertySetInfo()
+  REM sequence&lt; Property &gt; vPropInfo.getProperties()
+  REM Property vPropInfo.getPropertyByName(name)
+  REM boolean vPropInfo.hasPropertyByName(name)
+  vProps = vPropInfo.getProperties()
+  For i = 0 To UBound(vProps)
+    If nCount = 30 Then
+      nCount = 0
+      MsgBox s, 0, &quot;Properties&quot;
+      s = &quot;&quot;
+    End If
+    nCount = nCount + 1
+    vProp = vProps(i)  &apos;com.sun.star.beans.Property
+    s = S &amp; vProp.Name &amp; &quot; = &quot;
+    v = ThisComponent.getPropertyValue(vProp.Name)
+    If IsNull(v) Then
+      s = S &amp; &quot;Null&quot;
+    ElseIf IsEmpty(v) Then
+      s = S &amp; &quot;Empty&quot;
+    ElseIf VarType(v) &lt; 9 Then
+      s = S &amp; CStr(v)
+    Else
+      s = S &amp; &quot;Object or Array&quot;
+    End If
+    s = S &amp; CHR$(10)
+  Next
+  MsgBox s, 0, &quot;Properties&quot;
+End Sub
+
+Sub DisplayAvailableEvents
+  Dim oGEB   &apos; GlobalEventBroadcaster
+  Dim oDoc
+  Dim s$
+  Dim oText
+ 
+  oDoc = StarDesktop.LoadComponentFromUrl(&quot;private:factory/swriter&quot;, &quot;_blank&quot;, 0, Array())
+  oGEB = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
+  s = Join(oGEB.Events.getElementNames(), CHR$(10))
+  oText = oDoc.Text
+  oText.InsertString(oText.End, &quot;===Global Events&quot; &amp; CHR$(10), False)
+  oText.InsertString(oText.End, s, False)
+
+  s = Join(oDoc.Events.getElementNames(), CHR$(10))
+  oText.InsertString(oText.End, CHR$(10) &amp; CHR$(10) &amp; &quot;===Writer Events&quot; &amp; CHR$(10), False)
+  oText.InsertString(oText.End, s, False)
+End Sub
+
+Sub replaceSoftbreakToRealPageBreak
+  Dim oEnum              &apos;com.sun.star.container.XEnumerationAccess
+  Dim oPar               &apos;Paragraph of some sort
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim nTables As Integer &apos;Number of tables
+  Dim temp
+  Dim counter as Integer
+  Dim vPropInfo
+  REM ThisComponent refers to the current OOo document
+  REM Text is a property of ThisComponent for a text document
+  REM The getText() object method returns the same thing.
+  REM createEnumeration() is an object method.
+  oEnum = ThisComponent.Text.createEnumeration()
+  dim v
+  dim emptyCounter
+  emptyCounter = 0
+  Do While oEnum.hasMoreElements()
+    oPar = oEnum.nextElement()
+    temp = oEnum(0)
+    REM print(oPar.DBG_methods)
+    REM The returned paragraph will be a paragraph or a text table
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+	   	temp = oPar.getString()
+	   	msgbox temp
+	   	if temp = &quot;&quot; then
+	   		emptyCounter = emptyCounter + 1
+	   		ThisComponent.Text.removeTextContent(oPar)
+	   	end if
+	 end if
+  Loop
+end sub
+
+Sub showParaProperSet
+  Dim oEnum              &apos;com.sun.star.container.XEnumerationAccess
+  Dim oPar               &apos;Paragraph of some sort
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim nTables As Integer &apos;Number of tables
+  Dim temp As String
+  Dim counter as Integer
+  Dim vPropInfo
+  REM ThisComponent refers to the current OOo document
+  REM Text is a property of ThisComponent for a text document
+  REM The getText() object method returns the same thing.
+  REM createEnumeration() is an object method.
+  oEnum = ThisComponent.Text.createEnumeration()
+  Do While oEnum.hasMoreElements()
+    oPar = oEnum.nextElement()
+    REM print(oPar.DBG_methods)
+    REM The returned paragraph will be a paragraph or a text table
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+    	
+	   	&apos;msgbox oPar.dbg_properties
+	   	vPropInfo = oPar.getPropertySetInfo()
+		  REM sequence&lt; Property &gt; vPropInfo.getProperties()
+		  REM Property vPropInfo.getPropertyByName(name)
+		  REM boolean vPropInfo.hasPropertyByName(name)
+		  vProps = vPropInfo.getProperties()
+		  For i = 0 To UBound(vProps)
+		    If nCount = 20 Then
+		      nCount = 0
+		      MsgBox s, 0, &quot;Properties&quot;
+		      s = &quot;&quot;
+		    End If
+		    nCount = nCount + 1
+		    vProp = vProps(i)  &apos;com.sun.star.beans.Property
+		    s = S &amp; vProp.Name &amp; &quot; = &quot;
+		    v = oPar.getPropertyValue(vProp.Name)
+		    If IsNull(v) Then
+		      s = S &amp; &quot;Null&quot;
+		    ElseIf IsEmpty(v) Then
+		      s = S &amp; &quot;Empty&quot;
+		    ElseIf VarType(v) &lt; 9 Then
+		      s = S &amp; CStr(v)
+		    Else
+		      s = S &amp; &quot;Object or Array&quot;
+		    End If
+		    s = S &amp; CHR$(10)
+		  Next
+		  MsgBox s, 0, &quot;Properties&quot;
+    end if
+  Loop
+end sub
+
+Sub EnumerateTextSections
+  Dim oParEnum           &apos;Paragraph enumerator
+  Dim osecEnum           &apos;Text section enumerator
+  Dim oPar               &apos;Current paragraph
+  Dim oParSection        &apos;Current section
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim s$
+  
+  oParEnum = ThisComponent.Text.createEnumeration()
+  Do While oParEnum.hasMoreElements()
+    oPar = oParEnum.nextElement()
+    
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+      nPars = nPars + 1
+      oSecEnum = oPar.createEnumeration()
+      s = s &amp; nPars &amp; &quot;:&quot;
+      Do While oSecEnum.hasMoreElements()
+        oParSection = oSecEnum.nextElement()
+        s = s &amp; oParSection.TextPortionType &amp; &quot;:&quot;
+      Loop
+      s = s &amp; CHR$(10)
+      If nPars MOD 10 = 0 Then
+        MsgBox s, 0, &quot;Paragraph Text Sections&quot;
+        s = &quot;&quot;
+      End If
+    End If
+  Loop
+  MsgBox s, 0, &quot;Paragraph Text Sections&quot;
+End Sub
+
+
+</script:module>

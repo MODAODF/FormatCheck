@@ -1,0 +1,565 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="FormatCheck" script:language="StarBasic">Public oFormatOptionDialog as object
+Public oApplyCheckDialog as object
+Public oInitial as Boolean
+Public oReload as Boolean 
+
+REM 只有在文件啟動時觸發
+sub eventListener(event as com.sun.star.document.DocumentEvent)
+	if checkSaveAsThenReload(event.source) then
+		removeSaveAsThenReloadDocumentProperty(event.source)
+		event.source.store()
+		exit sub
+	end if
+	if event.source.getURL() = &quot;&quot; then
+		exit sub
+	end if
+	
+	oInitial = true
+	Dim ret
+	&apos;msgbox event.EventName
+	if checkModify(event.Source) then
+		exit sub
+	end if 
+	if not event.source.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
+		exit sub
+	end if
+    oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+    oFormatOptionDialog.visible = true
+end sub
+
+Sub addFormatCheckEvent
+	ret = msgbox (&quot;確定要啟用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		Dim mEventProps(1) as new com.sun.star.beans.PropertyValue
+		mEventProps(0).Name = &quot;EventType&quot;
+		mEventProps(0).Value = &quot;StarBasic&quot;
+		mEventProps(1).Name = &quot;Script&quot;
+		mEventProps(1).Value = &quot;vnd.sun.star.script:FormatCheck.FormatCheck.eventListener?language=Basic&amp;location=application&quot;
+		
+		
+		oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
+		oGlobalEventBroadcaster.Events.ReplaceByName(&quot;OnLoadFinished&quot;, mEventProps())
+	end if
+end sub
+
+Sub removeFormatCheckEvent
+	ret = msgbox (&quot;確定要取消格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		Dim mEventProps(1) as new com.sun.star.beans.PropertyValue
+		mEventProps(0).Name = &quot;EventType&quot;
+		mEventProps(0).Value = &quot;StarBasic&quot;
+		mEventProps(1).Name = &quot;Script&quot;
+		mEventProps(1).Value = &quot;&quot;
+		
+		
+		oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
+		oGlobalEventBroadcaster.Events.ReplaceByName(&quot;OnLoadFinished&quot;, mEventProps())
+	end if
+end sub
+
+sub menuAction
+	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
+		exit sub
+	end if
+	ret = msgbox (&quot;使用此功能前需要自動儲存一次，請問你要存檔嗎?&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		if ThisComponent.getURL() = &quot;&quot; then
+			document   = ThisComponent.CurrentController.Frame
+			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+			
+			rem ----------------------------------------------------------------------
+			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+			if ThisComponent.getURL() = &quot;&quot; then
+				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+				exit sub
+			end if
+			AddSaveAsThenReloadProperty(thiscomponent)
+	
+		end if
+	end if
+	
+    oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+    oFormatOptionDialog.visible = true
+end sub
+
+sub formatOption(event)
+	oDialog = event.source.context
+	oDialog.visible = false
+
+   	if oDialog.getControl(&quot;paraEmpty&quot;).State = &quot;1&quot; then
+   		replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
+   	end if
+   	if oDialog.getControl(&quot;disableGrid&quot;).State = &quot;1&quot; then
+   		disableGrid(thiscomponent)
+   	end if
+   	if oDialog.getControl(&quot;pageBreak&quot;).State = &quot;1&quot; then
+   		setPageBreak(thiscomponent)
+   	end if
+   	if oDialog.getControl(&quot;lineSpace&quot;).State = &quot;1&quot; then
+   		changeLineSpacing(thiscomponent)
+   	end if
+   	if not DialogIsRunning(oApplyCheckDialog) then
+   		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+   	end if
+   	
+	oApplyCheckDialog.visible = true
+end sub
+
+sub actionApply(event)
+	oDialog_check = event.source.context
+	oDialog_check.visible = false
+	AddNewDocumentProperty(thiscomponent)
+	thiscomponent.store()
+	
+end sub
+
+sub actionReload(event)
+
+	oDialog_check = event.source.context
+	oDialog_check.visible = false
+	thiscomponent.setModified(False)  &apos;Ignore changes&apos;
+	document = thiscomponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:Reload&quot;, &quot;&quot;, 0, Array())
+	if oInitial then
+		if not DialogIsRunning(oFormatOptionDialog) then
+			oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+		end if
+		oFormatOptionDialog.visible = true
+	end if
+end sub
+
+sub testtest
+	if ThisComponent.getURL() = &quot;&quot; then
+		document   = ThisComponent.CurrentController.Frame
+		dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+		
+		rem ----------------------------------------------------------------------
+		dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+		if ThisComponent.getURL() = &quot;&quot; then
+			msgbox &quot;請問檔案選擇一個儲存位置在行使用本功能&quot;
+			exit sub
+		end if 
+
+	end if
+	if not DialogIsRunning(oFormatOptionDialog) then
+		oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+	end if
+    oFormatOptionDialog.visible = true
+end sub
+
+function AddNewDocumentProperty(vDoc)
+  Dim oUDP
+  oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  If NOT oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
+    oUDP.addProperty(&quot;FormatCheck&quot;, _
+      com.sun.star.beans.PropertyAttribute.MAYBEVOID + _
+      com.sun.star.beans.PropertyAttribute.REMOVEABLE + _
+      com.sun.star.beans.PropertyAttribute.MAYBEDEFAULT, _
+      True)
+  End If
+End function
+
+function AddSaveAsThenReloadProperty(vDoc)
+  Dim oUDP
+  oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  If NOT oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
+    oUDP.addProperty(&quot;SaveAsThenReload&quot;, _
+      com.sun.star.beans.PropertyAttribute.MAYBEVOID + _
+      com.sun.star.beans.PropertyAttribute.REMOVEABLE + _
+      com.sun.star.beans.PropertyAttribute.MAYBEDEFAULT, _
+      True)
+  End If
+End function 
+
+function removeSaveAsThenReloadDocumentProperty(vDoc)
+  Dim oUDP
+  oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
+    oUDP.removeProperty(&quot;SaveAsThenReload&quot;)
+  End If
+End function 
+
+sub testReloadProperty()
+	Dim oUDP
+	
+  	oUDP = thiscomponent.getDocumentProperties().UserDefinedProperties
+  	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
+  		msgbox &quot;has&quot;
+  	end if
+end sub
+
+function checkSaveAsThenReload(vDoc)
+	Dim oUDP
+	checkSaveAsThenReload = False
+  	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
+  		checkSaveAsThenReload = True
+  	end if
+end function
+
+function removeDocumentProperty()
+  Dim oUDP
+  oUDP = ThisComponent.getDocumentProperties().UserDefinedProperties
+  If oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
+    oUDP.removeProperty(&quot;FormatCheck&quot;)
+  else
+  	msgbox &quot;已移除文件特性&quot;
+  End If
+End function 
+
+function checkModify(vDoc)
+	Dim oUDP
+	checkModify = False
+  	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
+  		checkModify = True
+  	end if
+end function
+
+sub doReplaceEmpty
+	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
+		msgbox &quot;此功能僅支援 Writer&quot;
+		exit sub
+	end if
+	oInitial = false
+	oReload = true
+	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用取代段落空白為定位符嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		if ThisComponent.getURL() = &quot;&quot; then
+			document   = ThisComponent.CurrentController.Frame
+			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+			
+			rem ----------------------------------------------------------------------
+			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+			if ThisComponent.getURL() = &quot;&quot; then
+				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+				exit sub
+			end if
+			AddSaveAsThenReloadProperty(thiscomponent)
+	
+		end if
+		thiscomponent.store()	
+		replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
+		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.visible = true
+	end if
+	
+end sub
+
+sub doDisableGrid
+	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
+		msgbox &quot;此功能僅支援 Writer&quot;
+		exit sub
+	end if
+	oInitial = false
+	oReload = true
+	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用取消格線嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		if ThisComponent.getURL() = &quot;&quot; then
+			document   = ThisComponent.CurrentController.Frame
+			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+			
+			rem ----------------------------------------------------------------------
+			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+			if ThisComponent.getURL() = &quot;&quot; then
+				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+				exit sub
+			end if 
+			AddSaveAsThenReloadProperty(thiscomponent)
+		end if
+		thiscomponent.store()	
+		disableGrid(thiscomponent)
+		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.visible = true
+	end if
+end sub
+
+sub doChangeLineSpacing
+	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
+		msgbox &quot;此功能僅支援 Writer&quot;
+		exit sub
+	end if
+	oInitial = false
+	oReload = true
+	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用行距為單行嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		if ThisComponent.getURL() = &quot;&quot; then
+			document   = ThisComponent.CurrentController.Frame
+			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+			
+			rem ----------------------------------------------------------------------
+			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+			if ThisComponent.getURL() = &quot;&quot; then
+				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+				exit sub
+			end if 
+			AddSaveAsThenReloadProperty(thiscomponent)
+		end if
+		thiscomponent.store()	
+		changeLineSpacing(thiscomponent)
+		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.visible = true
+	end if
+end sub
+
+sub doSetPageBreak
+	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
+		msgbox &quot;此功能僅支援 Writer&quot;
+		exit sub
+	end if
+	oInitial = false
+	oReload = true
+	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用以換行符取代 Enter 換行嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		if ThisComponent.getURL() = &quot;&quot; then
+			document   = ThisComponent.CurrentController.Frame
+			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+			
+			rem ----------------------------------------------------------------------
+			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+			if ThisComponent.getURL() = &quot;&quot; then
+				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+				exit sub
+			end if 
+			AddSaveAsThenReloadProperty(thiscomponent)
+		end if
+		thiscomponent.store()
+		setPageBreak(thiscomponent)
+		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.visible = true
+	end if
+end sub
+
+sub doNDCHyperLink
+	if not thiscomponent.supportsService(&quot;com.sun.star.sheet.SpreadsheetDocument&quot;) then
+		msgbox &quot;此功能僅支援 Calc&quot;
+		exit sub
+	end if
+	oInitial = false
+	oReload = true
+	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	if ret = 1 then
+		if ThisComponent.getURL() = &quot;&quot; then
+			document   = ThisComponent.CurrentController.Frame
+			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+			
+			rem ----------------------------------------------------------------------
+			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+			if ThisComponent.getURL() = &quot;&quot; then
+				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+				exit sub
+			end if 
+			AddSaveAsThenReloadProperty(thiscomponent)
+		end if
+		thiscomponent.store()	
+		SetSelectedCells(thiscomponent)
+		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.visible = true
+	end if
+end sub
+
+Sub replaceAllSpaceAsOneTabinParagraphs(vDoc)
+  Dim oEnum              &apos;com.sun.star.container.XEnumerationAccess
+  Dim oPar               &apos;Paragraph of some sort
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim nTables As Integer &apos;Number of tables
+  Dim temp As String
+  Dim counter as Integer
+  REM ThisComponent refers to the current OOo document
+  REM Text is a property of ThisComponent for a text document
+  REM The getText() object method returns the same thing.
+  REM createEnumeration() is an object method.
+
+  if isNull(vDoc) then
+  	vDoc = ThisComponent
+  end if
+  oEnum = vDoc.Text.createEnumeration()
+  Do While oEnum.hasMoreElements()
+    oPar = oEnum.nextElement()
+    REM print(oPar.DBG_methods)
+    REM The returned paragraph will be a paragraph or a text table
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+      &apos;MsgBox(oPar.DBG_methods)
+      &apos;msgbox(oPar.getString())
+      dim spaceNumber as integer
+      dim tabNumber as integer
+      dim startString 
+      dim replaceString 
+      replaceString = &quot;&quot;
+      startString = &quot;&quot;
+      temp = oPar.getString()
+      spaceNumber = 0
+      tabNumber = 0
+      for counter = 1 to Len(temp)
+      	Dim cChar
+      	cChar = mid(temp, counter, 1)
+      	if cChar = &quot; &quot; then
+ 			spaceNumber = spaceNumber+1
+ 		elseif cChar = &quot;	&quot; then 
+ 			tabNumber = tabNumber +1
+ 		else exit for
+ 		end if
+ 		startString = startString + cChar
+      next
+      
+      if spaceNumber &gt; 0 then
+      	if tabNumber &gt; 1 then
+      		&apos;msgbox tabNumber
+	      	for counter = 1 to tabNumber
+	      		replaceString = replaceString + &quot;	&quot;
+	      		&apos;msgbox counter
+	      	next
+	    else 
+	    	replaceString = &quot;	&quot;
+	    end if
+      	temp = replace(temp, startString, replaceString, 1, 1, FALSE)
+      end if
+      
+      
+      oPar.setString(temp)
+      nPars = nPars + 1
+    ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
+      nTables = nTables + 1
+    End If
+  Loop
+ 
+End Sub
+
+Sub changeLineSpacing(vDoc)
+  Dim oEnum              &apos;com.sun.star.container.XEnumerationAccess
+  Dim oPar               &apos;Paragraph of some sort
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim nTables As Integer &apos;Number of tables
+  Dim temp As String
+  Dim counter as Integer
+  Dim vPropInfo
+  REM ThisComponent refers to the current OOo document
+  REM Text is a property of ThisComponent for a text document
+  REM The getText() object method returns the same thing.
+  REM createEnumeration() is an object method.
+  if isNull(vDoc) then
+  	vDoc = ThisComponent
+  end if
+  oEnum = vDoc.Text.createEnumeration()
+  dim v
+  Do While oEnum.hasMoreElements()
+    oPar = oEnum.nextElement()
+    REM print(oPar.DBG_methods)
+    REM The returned paragraph will be a paragraph or a text table
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+	   	v = oPar.ParaLineSpacing
+		v.Mode = 0
+		v.Height = 100
+		oPar.ParaLineSpacing = v
+	 end if
+  Loop
+end sub
+
+
+Sub disableGrid(vDoc)
+    Dim oViewCursor as object
+    Dim pagestyle as string
+    Dim oStyle as object
+    Dim aStyle as object
+    Dim ret as integer 
+    if isNull(vDoc) then
+    vDoc = ThisComponent
+    end if
+    oViewCursor = vDoc.CurrentController.getViewCursor()
+    pagestyle = oViewCursor.PageStyleName 
+    oStyle = vDoc.StyleFamilies.getByName(&quot;PageStyles&quot;).getByName(pagestyle)
+   	oStyle.GridMode = 0
+End Sub
+
+Sub SilentlyReload
+	ThisComponent.setModified(False)  &apos;Ignore changes&apos;
+	document = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	dispatcher.executeDispatch(document, &quot;.uno:Reload&quot;, &quot;&quot;, 0, Array())
+End Sub
+
+Sub setPageBreak(vDoc)
+  Dim oParEnum           &apos;Paragraph enumerator
+  Dim osecEnum           &apos;Text section enumerator
+  Dim oPar               &apos;Current paragraph
+  Dim oParSection        &apos;Current section
+  Dim nPars As Integer   &apos;Number of paragraphs
+  Dim s$
+  dim emptyCounter as integer
+  Dim emptyParaCollect(100)
+  emptyCounter = 0
+  dim preParString
+  preParString = &quot;&quot;
+  dim softBreakCheck
+  softBreakCheck = false
+  dim parString
+  parString = &quot;&quot;
+  dim i
+  dim insertPageBreak
+  insertPageBreak = false
+  if isNull(vDoc) then
+  	vDoc = This.Component
+  end if
+  oParEnum = vDoc.Text.createEnumeration()
+  Do While oParEnum.hasMoreElements()
+    oPar = oParEnum.nextElement()
+    If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
+      parString = oPar.getString()
+      if parString = &quot;&quot; then
+      	emptyParaCollect(emptyCounter) = oPar
+      	emptyCounter = emptyCounter + 1
+      elseif insertPageBreak then
+      	oPar.PageDescName = oPar.PageStyleName
+      end if
+      if parString = &quot;&quot; and softBreakCheck then
+      	vDoc.Text.removeTextContent(oPar)
+      elseif parString &lt;&gt; &quot;&quot; and checkSoftbreak(oPar) = false then
+      	softBreakCheck = false
+      	emptyCounter = 0
+        Redim emptyParaCollect(100)
+      end if
+      oSecEnum = oPar.createEnumeration()
+      Do While oSecEnum.hasMoreElements()
+        oParSection = oSecEnum.nextElement()
+        if oParSection.TextPortionType = &quot;SoftPageBreak&quot; then
+        	&apos;msgbox emptyCounter
+        	if preParString = &quot;&quot; then
+	        	dim arraSize 
+	        	arraSize = emptyCounter - 2
+	        	for i = 0 to (arraSize)
+	        		vDoc.Text.removeTextContent(emptyParaCollect(i))
+	        	next
+	        	if parString &lt;&gt; &quot;&quot; then
+        			oPar.PageDescName = oPar.PageStyleName
+        		else
+        			insertPageBreak = true
+        		end if
+        	end if
+        	emptyCounter = 0
+        	Redim emptyParaCollect(100)
+        	if parString = &quot;&quot; then
+        		vDoc.Text.removeTextContent(oPar)
+        		softBreakCheck = true
+        	end if
+        end if
+      Loop
+      preParString = parString
+    End If
+    
+  Loop
+End Sub
+
+sub checkSoftbreak(oPar) as boolean
+	checkSoftbreak = false
+	oSecEnum = oPar.createEnumeration()
+    Do While oSecEnum.hasMoreElements()
+    	oParSection = oSecEnum.nextElement()
+        if oParSection.TextPortionType = &quot;SoftPageBreak&quot; then
+         checkSoftbreak = true
+        end if
+    Loop
+end sub
+</script:module>

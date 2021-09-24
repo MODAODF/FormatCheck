@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
+<script:module xmlns:script="http://openoffice.org/2000/script" script:name="Calc" script:language="StarBasic" script:moduleType="normal">Sub SetSelectedCells()
+  Dim oSelections &apos;The selections object
+  Dim oCell       &apos;If one cell is selected
+  Dim oRanges     &apos;If multiple ranges are selected, use this
+  Dim i As Long   &apos;General index variable
+  dim s
+  s = &quot;=HYPERLINK(&quot;&quot;http://google.com&quot;&quot;;&quot;&quot;rwwrwrwrrwr&quot;&quot;)&quot;
+  REM The current selection in the current controller. 
+  REM If there is no current controller, this returns NULL.
+  oSelections = ThisComponent.getCurrentSelection()
+  If IsNull(oSelections) Then Exit Sub
+
+  If oSelections.supportsService(&quot;com.sun.star.sheet.SheetCell&quot;) Then
+    oCell = oSelections
+    linkText = oCell.getString()
+	hyperlink = FindHyperLinkInCell(oCell)
+	&apos;s = &quot;=HYPERLINK(&quot;&quot;http://google.com&quot;&quot;;&quot;&quot;rwwrwrwrrwr&quot;&quot;)&quot;
+	if hyperlink &lt;&gt; &quot;&quot; then
+		s = &quot;=HYPERLINK(&quot;&quot;&quot; &amp; hyperlink &amp; &quot;&quot;&quot;;&quot;&quot;&quot; &amp; linkText &amp; &quot;&quot;&quot;)&quot;
+		oCell.setFormula(s)
+	end if
+	oCell.CharColor = &quot;238&quot;
+    REM For consistency, I could use the same call for a range as a cell
+    REM but this is only because a cell can also return the columns and rows.
+    REM SetRangeText(oSelections, s)
+  ElseIf oSelections.supportsService(&quot;com.sun.star.sheet.SheetCellRange&quot;) Then
+    SetRangeText(oSelections, s)
+  ElseIf oSelections.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
+    oRanges = oSelections
+    For i = 0 To oRanges.getCount() - 1
+      SetRangeText(oRanges.getByIndex(i))
+    Next
+  Else
+    Print &quot;Something else selected = &quot; &amp; oSelections.getImplementationName()
+  End If
+End Sub
+
+Sub SetRangeText(oRange)
+	Dim nCol As Long &apos;Column index variable
+	Dim nRow As Long &apos;Row index variable
+	Dim oCols        &apos;Columns in the selected range
+	Dim oRows        &apos;Rows in the selected range
+	
+	oCols = oRange.Columns : oRows = oRange.Rows
+	For nCol = 0 To oCols.getCount() - 1
+		For nRow = 0 To oRows.getCount() - 1
+			oCell = oRange.getCellByPosition(nCol, nRow)
+			linkText = oCell.getString()
+			hyperlink = FindHyperLinkInCell(oCell)
+			&apos;s = &quot;=HYPERLINK(&quot;&quot;http://google.com&quot;&quot;;&quot;&quot;rwwrwrwrrwr&quot;&quot;)&quot;
+			if hyperlink &lt;&gt; &quot;&quot; then
+				s = &quot;=HYPERLINK(&quot;&quot;&quot; &amp; hyperlink &amp; &quot;&quot;&quot;;&quot;&quot;&quot; &amp; linkText &amp; &quot;&quot;&quot;)&quot;
+				oCell.setFormula(s)
+				oCell.CharColor = &quot;238&quot;
+			end if
+			
+		Next
+	Next
+End Sub
+
+Sub FindHyperLinkInCell(oCell) as String
+  FindHyperLinkInCell = &quot;&quot;
+  Dim oText, oParEnum, oParElement
+  Dim oEnum, oElement 
+  oParEnum = oCell.getText().createEnumeration()
+  Do While oParEnum.hasMoreElements ()
+    oParElement = oParEnum.nextElement()
+    oEnum = oParElement.createEnumeration()
+    Do While oEnum.hasMoreElements ()
+      oElement = oEnum.nextElement()
+      If oElement.TextPortionType = &quot;TextField&quot; Then
+        If oElement.TextField.supportsService(&quot;com.sun.star.text.TextField.URL&quot;) Then
+          &apos;STRING  Representation = 
+          &apos;STRING  TargetFrame = 
+          &apos;STRING  URL = 
+          FindHyperLinkInCell = oElement.TextField.URL
+        End If
+      End If
+    Loop
+  Loop
+End Sub 
+</script:module>

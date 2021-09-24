@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="FormatOption" dlg:left="134" dlg:top="41" dlg:width="181" dlg:height="155" dlg:closeable="true" dlg:moveable="true" dlg:title="選擇套用的修正選項">
+ <dlg:bulletinboard>
+  <dlg:button dlg:id="cancel" dlg:tab-index="3" dlg:left="107" dlg:top="113" dlg:width="62" dlg:height="22" dlg:value="取消" dlg:button-type="cancel"/>
+  <dlg:button dlg:id="Apply" dlg:tab-index="2" dlg:left="15" dlg:top="113" dlg:width="62" dlg:height="22" dlg:value="套用">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:FormatCheck.FormatCheck.formatOption?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:checkbox dlg:id="disableGrid" dlg:tab-index="1" dlg:left="21" dlg:top="30" dlg:width="65" dlg:height="14" dlg:value="取消格線" dlg:valign="center" dlg:checked="false"/>
+  <dlg:checkbox dlg:id="paraEmpty" dlg:tab-index="0" dlg:left="21" dlg:top="10" dlg:width="79" dlg:height="14" dlg:value="取代段落開頭的空白" dlg:valign="center" dlg:checked="false"/>
+  <dlg:checkbox dlg:id="pageBreak" dlg:tab-index="4" dlg:left="21" dlg:top="52" dlg:width="80" dlg:height="14" dlg:value="以換頁符取代 Enter 換頁" dlg:valign="center" dlg:checked="false"/>
+  <dlg:checkbox dlg:id="lineSpace" dlg:tab-index="5" dlg:left="21" dlg:top="78" dlg:width="80" dlg:height="14" dlg:value="單行行距" dlg:valign="center" dlg:checked="false"/>
+ </dlg:bulletinboard>
+</dlg:window>
