@@ -3,10 +3,18 @@
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="FormatCheck" script:language="StarBasic">Public oFormatOptionDialog as object
 Public oApplyCheckDialog as object
 Public oInitial as Boolean
-Public oReload as Boolean 
+Public oReload as Boolean
+Global oEnabled as Boolean
+Global toApplyCheck as Integer
+Global noeventListener as Boolean
+
 
 REM 只有在文件啟動時觸發
 sub eventListener(event as com.sun.star.document.DocumentEvent)
+	if noeventListener = true then
+		noeventListener = false
+		exit sub
+	end if
 	if checkSaveAsThenReload(event.source) then
 		removeSaveAsThenReloadDocumentProperty(event.source)
 		event.source.store()
@@ -30,8 +38,8 @@ sub eventListener(event as com.sun.star.document.DocumentEvent)
 end sub
 
 Sub addFormatCheckEvent
-	ret = msgbox (&quot;確定要啟用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
-	if ret = 1 then
+	&apos;ret = msgbox (&quot;確定要啟用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	&apos;if ret = 1 then
 		Dim mEventProps(1) as new com.sun.star.beans.PropertyValue
 		mEventProps(0).Name = &quot;EventType&quot;
 		mEventProps(0).Value = &quot;StarBasic&quot;
@@ -41,12 +49,13 @@ Sub addFormatCheckEvent
 		
 		oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
 		oGlobalEventBroadcaster.Events.ReplaceByName(&quot;OnLoadFinished&quot;, mEventProps())
-	end if
+	&apos;end if
+	msgbox (&quot;已啟用格式修正建議&quot;)
 end sub
 
 Sub removeFormatCheckEvent
-	ret = msgbox (&quot;確定要取消格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
-	if ret = 1 then
+	&apos;ret = msgbox (&quot;確定要取消格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	&apos;if ret = 1 then
 		Dim mEventProps(1) as new com.sun.star.beans.PropertyValue
 		mEventProps(0).Name = &quot;EventType&quot;
 		mEventProps(0).Value = &quot;StarBasic&quot;
@@ -56,55 +65,80 @@ Sub removeFormatCheckEvent
 		
 		oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
 		oGlobalEventBroadcaster.Events.ReplaceByName(&quot;OnLoadFinished&quot;, mEventProps())
-	end if
+	&apos;end if
+	msgbox (&quot;已停用格式修正建議&quot;)
+end sub
+
+Sub FormatCheckEvent
+    if oEnabled = false then
+        removeFormatCheckEvent
+        oEnabled = true
+    else
+        addFormatCheckEvent
+        oEnabled = false
+    end if
 end sub
 
 sub menuAction
 	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
 		exit sub
 	end if
-	ret = msgbox (&quot;使用此功能前需要自動儲存一次，請問你要存檔嗎?&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
-	if ret = 1 then
-		if ThisComponent.getURL() = &quot;&quot; then
+	if ThisComponent.isModified then
+		ret = msgbox (&quot;使用此功能前必須先存檔，您想要存檔嗎？&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+		if ret = 1 then
+			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
 			rem ----------------------------------------------------------------------
 			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
-			if ThisComponent.getURL() = &quot;&quot; then
+			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if
 			AddSaveAsThenReloadProperty(thiscomponent)
-	
+			&apos;end if
+	        Goto toRun
+	        exit sub
 		end if
 	end if
-	
-    oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
-    oFormatOptionDialog.visible = true
+	Goto toRun
+toRun:
+	oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+	oFormatOptionDialog.visible = true
 end sub
 
 sub formatOption(event)
+	checkenablebox = false
 	oDialog = event.source.context
 	oDialog.visible = false
 
    	if oDialog.getControl(&quot;paraEmpty&quot;).State = &quot;1&quot; then
    		replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
+   		checkenablebox = true
    	end if
    	if oDialog.getControl(&quot;disableGrid&quot;).State = &quot;1&quot; then
    		disableGrid(thiscomponent)
+   		checkenablebox = true
    	end if
    	if oDialog.getControl(&quot;pageBreak&quot;).State = &quot;1&quot; then
    		setPageBreak(thiscomponent)
+   		checkenablebox = true
    	end if
    	if oDialog.getControl(&quot;lineSpace&quot;).State = &quot;1&quot; then
    		changeLineSpacing(thiscomponent)
+   		checkenablebox = true
    	end if
-   	if not DialogIsRunning(oApplyCheckDialog) then
-   		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+   	if checkenablebox = false then
+   		msgbox &quot;未選擇任何選項!&quot;
+   		exit sub
    	end if
-   	
-	oApplyCheckDialog.visible = true
+   	if toApplyCheck then
+   		if not DialogIsRunning(oApplyCheckDialog) then
+   			oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+   		end if
+		oApplyCheckDialog.visible = true
+	end if
 end sub
 
 sub actionApply(event)
@@ -112,23 +146,26 @@ sub actionApply(event)
 	oDialog_check.visible = false
 	AddNewDocumentProperty(thiscomponent)
 	thiscomponent.store()
-	
+	toApplyCheck = 0 &apos;init toApplyChec
 end sub
 
 sub actionReload(event)
-
+	if toApplyCheck then
+		noeventListener = true
+	end if
 	oDialog_check = event.source.context
 	oDialog_check.visible = false
 	thiscomponent.setModified(False)  &apos;Ignore changes&apos;
 	document = thiscomponent.CurrentController.Frame
 	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 	dispatcher.executeDispatch(document, &quot;.uno:Reload&quot;, &quot;&quot;, 0, Array())
-	if oInitial then
-		if not DialogIsRunning(oFormatOptionDialog) then
-			oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
-		end if
-		oFormatOptionDialog.visible = true
-	end if
+	&apos;if oInitial then
+	&apos;	if not DialogIsRunning(oFormatOptionDialog) then
+	&apos;		oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+	&apos;	end if
+	&apos;	oFormatOptionDialog.visible = true
+	&apos;end if
+	toApplyCheck = 0 &apos;init toApplyChec
 end sub
 
 sub testtest
@@ -226,27 +263,42 @@ sub doReplaceEmpty
 	end if
 	oInitial = false
 	oReload = true
-	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用取代段落空白為定位符嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	oDisp = &quot;&quot;
+	if ThisComponent.isModified then
+		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用取代段落空白為定位符嗎？&quot;
+	else
+		oDisp = oDisp + &quot;確定要套用取代段落空白為定位符嗎？&quot;
+	end if
+	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+
 	if ret = 1 then
-		if ThisComponent.getURL() = &quot;&quot; then
+		if ThisComponent.isModified then
+			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
 			rem ----------------------------------------------------------------------
 			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
-			if ThisComponent.getURL() = &quot;&quot; then
+			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if
 			AddSaveAsThenReloadProperty(thiscomponent)
-	
+			&apos;end if
+			Goto toRun
+		else
+			Goto toRun
 		end if
-		thiscomponent.store()	
-		replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
+	end if
+
+	exit sub &apos;if ret != 1&apos;	
+toRun:
+	thiscomponent.store()	
+	replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
+	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
 		oApplyCheckDialog.visible = true
 	end if
-	
 end sub
 
 sub doDisableGrid
@@ -256,22 +308,39 @@ sub doDisableGrid
 	end if
 	oInitial = false
 	oReload = true
-	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用取消格線嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	oDisp = &quot;&quot;
+	if ThisComponent.isModified then
+		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用取消格線嗎？&quot;
+	else
+		oDisp = oDisp + &quot;確定要套用取消格線嗎？&quot;
+	end if
+	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	
 	if ret = 1 then
-		if ThisComponent.getURL() = &quot;&quot; then
+		if ThisComponent.isModified then
+			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
 			rem ----------------------------------------------------------------------
 			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
-			if ThisComponent.getURL() = &quot;&quot; then
+			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
 			AddSaveAsThenReloadProperty(thiscomponent)
+			&apos;end if
+			Goto toRun
+		else
+			Goto toRun
 		end if
-		thiscomponent.store()	
-		disableGrid(thiscomponent)
+	end if
+
+	exit sub &apos;if ret != 1&apos;
+toRun:
+	thiscomponent.store()	
+	disableGrid(thiscomponent)
+	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
 		oApplyCheckDialog.visible = true
 	end if
@@ -284,22 +353,39 @@ sub doChangeLineSpacing
 	end if
 	oInitial = false
 	oReload = true
-	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用行距為單行嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	oDisp = &quot;&quot;
+	if ThisComponent.isModified then
+		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用行距為單行嗎？&quot;
+	else
+		oDisp = oDisp + &quot;確定要套用行距為單行嗎？&quot;
+	end if
+	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+
 	if ret = 1 then
-		if ThisComponent.getURL() = &quot;&quot; then
+		if ThisComponent.isModified then
+			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
 			rem ----------------------------------------------------------------------
 			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
-			if ThisComponent.getURL() = &quot;&quot; then
+			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
 			AddSaveAsThenReloadProperty(thiscomponent)
+			&apos;end if
+			Goto toRun
+		else
+			Goto toRun
 		end if
-		thiscomponent.store()	
-		changeLineSpacing(thiscomponent)
+	end if
+
+	exit sub &apos;if ret != 1&apos;
+toRun:
+	thiscomponent.store()	
+	changeLineSpacing(thiscomponent)
+	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
 		oApplyCheckDialog.visible = true
 	end if
@@ -312,22 +398,39 @@ sub doSetPageBreak
 	end if
 	oInitial = false
 	oReload = true
-	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用以換行符取代 Enter 換行嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	oDisp = &quot;&quot;
+	if ThisComponent.isModified then
+		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用以換行符取代 Enter 換頁嗎？&quot;
+	else
+		oDisp = oDisp + &quot;確定要套用以換行符取代 Enter 換頁嗎？&quot;
+	end if
+	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+
 	if ret = 1 then
-		if ThisComponent.getURL() = &quot;&quot; then
+		if ThisComponent.isModified then
+			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
 			rem ----------------------------------------------------------------------
 			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
-			if ThisComponent.getURL() = &quot;&quot; then
+			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
 			AddSaveAsThenReloadProperty(thiscomponent)
+			&apos;end if
+			Goto toRun
+		else
+			Goto toRun
 		end if
-		thiscomponent.store()
-		setPageBreak(thiscomponent)
+	end if
+
+	exit sub &apos;if ret != 1
+toRun:
+	thiscomponent.store()
+	setPageBreak(thiscomponent)
+	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
 		oApplyCheckDialog.visible = true
 	end if
@@ -340,22 +443,39 @@ sub doNDCHyperLink
 	end if
 	oInitial = false
 	oReload = true
-	ret = msgbox (&quot;使用此功能前會自動儲存一次，確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	oDisp = &quot;&quot;
+	if ThisComponent.isModified then
+		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎？&quot;
+	else
+		oDisp = oDisp + &quot;確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎？&quot;
+	end if
+	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+
 	if ret = 1 then
-		if ThisComponent.getURL() = &quot;&quot; then
+		if ThisComponent.isModified then
+			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
 			rem ----------------------------------------------------------------------
 			dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
-			if ThisComponent.getURL() = &quot;&quot; then
+			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
 			AddSaveAsThenReloadProperty(thiscomponent)
+			&apos;end if
+			Goto toRun
+		else
+			Goto toRun
 		end if
-		thiscomponent.store()	
-		SetSelectedCells(thiscomponent)
+	end if
+
+	exit sub &apos;if ret != 1
+toRun:
+	thiscomponent.store()	
+	SetSelectedCells(thiscomponent)
+	if toApplyCheck then	
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
 		oApplyCheckDialog.visible = true
 	end if
@@ -368,6 +488,7 @@ Sub replaceAllSpaceAsOneTabinParagraphs(vDoc)
   Dim nTables As Integer &apos;Number of tables
   Dim temp As String
   Dim counter as Integer
+  Dim changeflag As Integer
   REM ThisComponent refers to the current OOo document
   REM Text is a property of ThisComponent for a text document
   REM The getText() object method returns the same thing.
@@ -376,6 +497,7 @@ Sub replaceAllSpaceAsOneTabinParagraphs(vDoc)
   if isNull(vDoc) then
   	vDoc = ThisComponent
   end if
+  changeflag = 0
   oEnum = vDoc.Text.createEnumeration()
   Do While oEnum.hasMoreElements()
     oPar = oEnum.nextElement()
@@ -416,16 +538,19 @@ Sub replaceAllSpaceAsOneTabinParagraphs(vDoc)
 	    	replaceString = &quot;	&quot;
 	    end if
       	temp = replace(temp, startString, replaceString, 1, 1, FALSE)
+        oPar.setString(temp)
+        nPars = nPars + 1
+      	changeflag = changeflag + 1
       end if
-      
-      
-      oPar.setString(temp)
-      nPars = nPars + 1
     ElseIf oPar.supportsService(&quot;com.sun.star.text.TextTable&quot;) Then
       nTables = nTables + 1
     End If
   Loop
- 
+  if changeflag then
+     toApplyCheck = toApplyCheck + 1
+  else
+     msgbox &quot;文件中未發現段落開頭空白字元!&quot;
+  end if
 End Sub
 
 Sub changeLineSpacing(vDoc)
@@ -436,6 +561,7 @@ Sub changeLineSpacing(vDoc)
   Dim temp As String
   Dim counter as Integer
   Dim vPropInfo
+  Dim changeflag As Integer
   REM ThisComponent refers to the current OOo document
   REM Text is a property of ThisComponent for a text document
   REM The getText() object method returns the same thing.
@@ -445,17 +571,29 @@ Sub changeLineSpacing(vDoc)
   end if
   oEnum = vDoc.Text.createEnumeration()
   dim v
+  changeflag = 0
   Do While oEnum.hasMoreElements()
     oPar = oEnum.nextElement()
     REM print(oPar.DBG_methods)
     REM The returned paragraph will be a paragraph or a text table
     If oPar.supportsService(&quot;com.sun.star.text.Paragraph&quot;) Then
 	   	v = oPar.ParaLineSpacing
-		v.Mode = 0
-		v.Height = 100
-		oPar.ParaLineSpacing = v
+	   	&apos;msgbox &quot;v.Mode = &quot; + v.Mode + &quot;  v.Height = &quot; + v.Height
+	   	if  v.Height &lt;&gt; 100 then
+			v.Mode = 0
+			v.Height = 100
+			oPar.ParaLineSpacing = v
+			changeflag = changeflag + 1
+		end if
+		&apos;oPar.ParaLineSpacing = v
 	 end if
   Loop
+
+  if changeflag then
+  	toApplyCheck = toApplyCheck + 1
+  else
+  	msgbox &quot;文件中段落設定都是單行行距!&quot;
+  end if
 end sub
 
 
@@ -471,7 +609,12 @@ Sub disableGrid(vDoc)
     oViewCursor = vDoc.CurrentController.getViewCursor()
     pagestyle = oViewCursor.PageStyleName 
     oStyle = vDoc.StyleFamilies.getByName(&quot;PageStyles&quot;).getByName(pagestyle)
-   	oStyle.GridMode = 0
+    if oStyle.GridMode = 1 or oStyle.GridMode = 2 then
+	   	oStyle.GridMode = 0
+	   	toApplyCheck = toApplyCheck + 1
+	else
+		msgbox &quot;文件中未發現有網格!&quot;
+	end if
 End Sub
 
 Sub SilentlyReload
@@ -490,6 +633,7 @@ Sub setPageBreak(vDoc)
   Dim s$
   dim emptyCounter as integer
   Dim emptyParaCollect(100)
+  dim allnone as Boolean
   emptyCounter = 0
   dim preParString
   preParString = &quot;&quot;
@@ -503,6 +647,7 @@ Sub setPageBreak(vDoc)
   if isNull(vDoc) then
   	vDoc = This.Component
   end if
+  allnone = true
   oParEnum = vDoc.Text.createEnumeration()
   Do While oParEnum.hasMoreElements()
     oPar = oParEnum.nextElement()
@@ -526,6 +671,7 @@ Sub setPageBreak(vDoc)
         oParSection = oSecEnum.nextElement()
         if oParSection.TextPortionType = &quot;SoftPageBreak&quot; then
         	&apos;msgbox emptyCounter
+        	allnone = false
         	if preParString = &quot;&quot; then
 	        	dim arraSize 
 	        	arraSize = emptyCounter - 2
@@ -548,8 +694,12 @@ Sub setPageBreak(vDoc)
       Loop
       preParString = parString
     End If
-    
   Loop
+  if allnone then
+	msgbox &quot;文件中未發現有 Enter 換頁情形!&quot;
+  else
+  	toApplyCheck = toApplyCheck + 1
+  end if
 End Sub
 
 sub checkSoftbreak(oPar) as boolean

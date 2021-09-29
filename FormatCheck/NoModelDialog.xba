@@ -21,6 +21,7 @@ Function LoadModelessDialog(sLibName As String, sDialogName As String) As Object
 	Dim oParent As Object
 	Dim oDialog As Object
 	Dim oTopWinListener As Object
+	pDialogName = sDialogName
 	Set oParent = StarDesktop.getCurrentFrame().getContainerWindow()
 	Set oCWP = CreateUnoService(&quot;com.sun.star.awt.ContainerWindowProvider&quot;)
 	Set oTopWinListener = CreateUnoListener(_
@@ -46,7 +47,16 @@ End Function
 
 Function FormatCheck_TopWindow_windowClosing(e as com.sun.star.lang.EventObject)
 	&apos;e.Source.setVisible(False)
-	e.Source.dispose()
+	if toApplyCheck then
+		e.Source.dispose()
+		thiscomponent.setModified(False)  &apos;Ignore changes&apos;
+		document = thiscomponent.CurrentController.Frame
+		dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+		dispatcher.executeDispatch(document, &quot;.uno:Reload&quot;, &quot;&quot;, 0, Array())
+		toApplyCheck = 0 &apos;init toApplyCheck
+	else
+		e.Source.dispose()
+	end if
 End Function
 
 Function FormatCheck_TopWindow_windowDeactivated(e as com.sun.star.lang.EventObject)

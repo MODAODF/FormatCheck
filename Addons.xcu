@@ -11,13 +11,13 @@
 					<value xml:lang="zh-tw">格式校正工具(~C)</value>
 				</prop>
 				<node oor:name="Submenu">
-					<node oor:name="menu00" oor:op="replace">
+					<node oor:name="M1001" oor:op="replace">
 						<prop oor:name="Context" oor:type="xs:string">
 							<value>com.sun.star.text.TextDocument</value>
 						</prop>
 						<prop oor:name="Title" oor:type="xs:string">
 							<value xml:lang="en">FormatCheckMsg</value>
-							<value xml:lang="zh-TW">啟用格式校正(~M)</value>
+							<value xml:lang="zh-TW">手動格式校正(~M)</value>
 						</prop>
 						<prop oor:name="URL" oor:type="xs:string">
 							<value>vnd.sun.star.script:FormatCheck.FormatCheck.menuAction?language=Basic&amp;location=application</value>
@@ -26,6 +26,11 @@
 							<value>_self</value>
 						</prop>
 					</node>
+                    <node oor:name="M1002" oor:op="replace">
+						<prop oor:name="Title" oor:type="xs:string">
+							<value xml:lang="en-US">單一格式校正</value>
+						</prop>
+                    <node oor:name="Submenu">
 					<node oor:name="menu01" oor:op="replace"> 
 						<prop oor:name="Context" oor:type="xs:string">
 							<value>com.sun.star.text.TextDocument</value>
@@ -82,6 +87,8 @@
 							<value>_self</value>
 						</prop>
 					</node>
+                    </node><!-- 單一格式校正 Submenu end --> 
+                    </node><!-- 單一格式校正 Title end -->  
 					<node oor:name="menu05" oor:op="replace"> 
 						<prop oor:name="Context" oor:type="xs:string">
 							<value>com.sun.star.sheet.SpreadsheetDocument</value>
@@ -103,113 +110,23 @@
 						<prop oor:name="URL" oor:type="xs:string">
 						  <value>private:separator</value>
 						</prop>
-					  </node>
+                    </node>
 					<node oor:name="menu07" oor:op="replace">
 						<prop oor:name="Context" oor:type="xs:string">
 							<value>com.sun.star.text.TextDocument</value>
 						</prop>
 						<prop oor:name="Title" oor:type="xs:string">
-							<value>取消格式修正建議</value>
+							<value>啟用/停用格式修正建議</value>
 						</prop>
 						<prop oor:name="URL" oor:type="xs:string">
-							<value>vnd.sun.star.script:FormatCheck.FormatCheck.removeFormatCheckEvent?language=Basic&amp;location=application</value>
+							<value>vnd.sun.star.script:FormatCheck.FormatCheck.FormatCheckEvent?language=Basic&amp;location=application</value>
 						</prop>
 						<prop oor:name="Target" oor:type="xs:string">
 							<value>_self</value>
 						</prop>
-					</node>
-					<node oor:name="menu08" oor:op="replace">
-						<prop oor:name="Context" oor:type="xs:string">
-							<value>com.sun.star.text.TextDocument</value>
-						</prop>
-						<prop oor:name="Title" oor:type="xs:string">
-							<value>啟用格式修正建議</value>
-						</prop>
-						<prop oor:name="URL" oor:type="xs:string">
-							<value>vnd.sun.star.script:FormatCheck.FormatCheck.addFormatCheckEvent?language=Basic&amp;location=application</value>
-						</prop>
-						<prop oor:name="Target" oor:type="xs:string">
-							<value>_self</value>
-						</prop>
-					</node>
-				</node>
+                    </node>
+                </node><!-- 手動格式校正 Submenu end -->
 			</node>
 		</node>
-		<!-- 暫時不在分組頁面顯示
-		<node oor:name="OfficeNotebookBar">
-            <node oor:name="FormatCheck.OfficeToolBar" oor:op="replace">
-                <node oor:name="menu01" oor:op="replace"> 
-                    <prop oor:name="Context" oor:type="xs:string">
-                        <value>com.sun.star.text.TextDocument</value>
-                    </prop>
-                    <prop oor:name="Title" oor:type="xs:string">
-                        <value>取代段落空白</value>
-                    </prop>
-                    <prop oor:name="URL" oor:type="xs:string">
-                        <value>vnd.sun.star.script:FormatCheck.FormatCheck.doReplaceEmpty?language=Basic&amp;location=application</value>
-                    </prop>
-                    <prop oor:name="Target" oor:type="xs:string">
-                        <value>_self</value>
-                    </prop>
-                </node>
-				<node oor:name="menu02" oor:op="replace"> 
-                    <prop oor:name="Context" oor:type="xs:string">
-                        <value>com.sun.star.text.TextDocument</value>
-                    </prop>
-                    <prop oor:name="Title" oor:type="xs:string">
-                        <value>轉換行距為單行</value>
-                    </prop>
-                    <prop oor:name="URL" oor:type="xs:string">
-                        <value>vnd.sun.star.script:FormatCheck.FormatCheck.doChangeLineSpacing?language=Basic&amp;location=application</value>
-                    </prop>
-                    <prop oor:name="Target" oor:type="xs:string">
-                        <value>_self</value>
-                    </prop>
-                </node>
-				<node oor:name="menu03" oor:op="replace"> 
-                    <prop oor:name="Context" oor:type="xs:string">
-                        <value>com.sun.star.text.TextDocument</value>
-                    </prop>
-                    <prop oor:name="Title" oor:type="xs:string">
-                        <value>用換頁符取代 Enter 換頁</value>
-                    </prop>
-                    <prop oor:name="URL" oor:type="xs:string">
-                        <value>vnd.sun.star.script:FormatCheck.FormatCheck.doSetPageBreak?language=Basic&amp;location=application</value>
-                    </prop>
-                    <prop oor:name="Target" oor:type="xs:string">
-                        <value>_self</value>
-                    </prop>
-                </node>
-				<node oor:name="menu04" oor:op="replace"> 
-                    <prop oor:name="Context" oor:type="xs:string">
-                        <value>com.sun.star.text.TextDocument</value>
-                    </prop>
-                    <prop oor:name="Title" oor:type="xs:string">
-                        <value>取消格線</value>
-                    </prop>
-                    <prop oor:name="URL" oor:type="xs:string">
-                        <value>vnd.sun.star.script:FormatCheck.FormatCheck.doDisableGrid?language=Basic&amp;location=application</value>
-                    </prop>
-                    <prop oor:name="Target" oor:type="xs:string">
-                        <value>_self</value>
-                    </prop>
-                </node>
-				<node oor:name="menu05" oor:op="replace"> 
-                    <prop oor:name="Context" oor:type="xs:string">
-                        <value>com.sun.star.text.TextDocument</value>
-                    </prop>
-                    <prop oor:name="Title" oor:type="xs:string">
-                        <value>以 NDC 超連結取代選取範圍的內建超連結</value>
-                    </prop>
-                    <prop oor:name="URL" oor:type="xs:string">
-                        <value>vnd.sun.star.script:FormatCheck.FormatCheck.doNDCHyperLink?language=Basic&amp;location=application</value>
-                    </prop>
-                    <prop oor:name="Target" oor:type="xs:string">
-                        <value>_self</value>
-                    </prop>
-                </node>
-            </node>
-        </node>
-		-->
 	</node>
 </oor:component-data>

@@ -20,21 +20,29 @@
 	if hyperlink &lt;&gt; &quot;&quot; then
 		s = &quot;=HYPERLINK(&quot;&quot;&quot; &amp; hyperlink &amp; &quot;&quot;&quot;;&quot;&quot;&quot; &amp; linkText &amp; &quot;&quot;&quot;)&quot;
 		oCell.setFormula(s)
+		oCell.CharColor = &quot;238&quot;
+		goto addapplycheck
+	else
+		msgbox &quot;請選取需要替代超連結的範圍&quot;
+		exit sub
 	end if
-	oCell.CharColor = &quot;238&quot;
     REM For consistency, I could use the same call for a range as a cell
     REM but this is only because a cell can also return the columns and rows.
     REM SetRangeText(oSelections, s)
   ElseIf oSelections.supportsService(&quot;com.sun.star.sheet.SheetCellRange&quot;) Then
     SetRangeText(oSelections, s)
+    goto addapplycheck
   ElseIf oSelections.supportsService(&quot;com.sun.star.sheet.SheetCellRanges&quot;) Then
     oRanges = oSelections
     For i = 0 To oRanges.getCount() - 1
       SetRangeText(oRanges.getByIndex(i))
     Next
+    goto addapplycheck
   Else
     Print &quot;Something else selected = &quot; &amp; oSelections.getImplementationName()
   End If
+addapplycheck:
+  toApplyCheck = toApplyCheck + 1
 End Sub
 
 Sub SetRangeText(oRange)
