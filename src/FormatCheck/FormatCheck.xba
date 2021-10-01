@@ -54,7 +54,7 @@ Sub addFormatCheckEvent
 end sub
 
 Sub removeFormatCheckEvent
-	&apos;ret = msgbox (&quot;確定要取消格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
+	&apos;ret = msgbox (&quot;確定要停用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 	&apos;if ret = 1 then
 		Dim mEventProps(1) as new com.sun.star.beans.PropertyValue
 		mEventProps(0).Name = &quot;EventType&quot;
@@ -70,23 +70,24 @@ Sub removeFormatCheckEvent
 end sub
 
 Sub FormatCheckEvent
-    if oEnabled = false then
-        removeFormatCheckEvent
-        oEnabled = true
-    else
-        addFormatCheckEvent
-        oEnabled = false
-    end if
+	oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
+	mEventProps = oGlobalEventBroadcaster.Events.getByName(&quot;OnLoadFinished&quot;)
+	if mEventProps(1).Value = &quot;&quot; then
+		addFormatCheckEvent
+		oEnabled = false
+	else
+		removeFormatCheckEvent
+		oEnabled = true
+	end if
 end sub
 
 sub menuAction
 	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
 		exit sub
 	end if
-	if ThisComponent.isModified then
+	if ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot; then
 		ret = msgbox (&quot;使用此功能前必須先存檔，您想要存檔嗎？&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 		if ret = 1 then
-			&apos;if ThisComponent.getURL() = &quot;&quot; then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
@@ -96,14 +97,14 @@ sub menuAction
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if
-			AddSaveAsThenReloadProperty(thiscomponent)
-			&apos;end if
+			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 	        Goto toRun
 	        exit sub
 		end if
 	end if
 	Goto toRun
 toRun:
+	thiscomponent.store()
 	oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
 	oFormatOptionDialog.visible = true
 end sub
@@ -264,7 +265,8 @@ sub doReplaceEmpty
 	oInitial = false
 	oReload = true
 	oDisp = &quot;&quot;
-	if ThisComponent.isModified then
+	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
+	if oFileSaveAs then
 		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用取代段落空白為定位符嗎？&quot;
 	else
 		oDisp = oDisp + &quot;確定要套用取代段落空白為定位符嗎？&quot;
@@ -272,8 +274,7 @@ sub doReplaceEmpty
 	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 
 	if ret = 1 then
-		if ThisComponent.isModified then
-			&apos;if ThisComponent.getURL() = &quot;&quot; then
+		if oFileSaveAs then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
@@ -282,9 +283,8 @@ sub doReplaceEmpty
 			if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
+			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 			end if
-			AddSaveAsThenReloadProperty(thiscomponent)
-			&apos;end if
 			Goto toRun
 		else
 			Goto toRun
@@ -309,7 +309,8 @@ sub doDisableGrid
 	oInitial = false
 	oReload = true
 	oDisp = &quot;&quot;
-	if ThisComponent.isModified then
+	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
+	if oFileSaveAs then
 		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用取消格線嗎？&quot;
 	else
 		oDisp = oDisp + &quot;確定要套用取消格線嗎？&quot;
@@ -317,8 +318,7 @@ sub doDisableGrid
 	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 	
 	if ret = 1 then
-		if ThisComponent.isModified then
-			&apos;if ThisComponent.getURL() = &quot;&quot; then
+		if oFileSaveAs then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
@@ -328,8 +328,7 @@ sub doDisableGrid
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
-			AddSaveAsThenReloadProperty(thiscomponent)
-			&apos;end if
+			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 			Goto toRun
 		else
 			Goto toRun
@@ -354,7 +353,8 @@ sub doChangeLineSpacing
 	oInitial = false
 	oReload = true
 	oDisp = &quot;&quot;
-	if ThisComponent.isModified then
+	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
+	if oFileSaveAs then
 		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用行距為單行嗎？&quot;
 	else
 		oDisp = oDisp + &quot;確定要套用行距為單行嗎？&quot;
@@ -362,8 +362,7 @@ sub doChangeLineSpacing
 	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 
 	if ret = 1 then
-		if ThisComponent.isModified then
-			&apos;if ThisComponent.getURL() = &quot;&quot; then
+		if oFileSaveAs then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
@@ -373,8 +372,7 @@ sub doChangeLineSpacing
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
-			AddSaveAsThenReloadProperty(thiscomponent)
-			&apos;end if
+			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 			Goto toRun
 		else
 			Goto toRun
@@ -399,7 +397,8 @@ sub doSetPageBreak
 	oInitial = false
 	oReload = true
 	oDisp = &quot;&quot;
-	if ThisComponent.isModified then
+	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
+	if oFileSaveAs then
 		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用以換行符取代 Enter 換頁嗎？&quot;
 	else
 		oDisp = oDisp + &quot;確定要套用以換行符取代 Enter 換頁嗎？&quot;
@@ -407,8 +406,7 @@ sub doSetPageBreak
 	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 
 	if ret = 1 then
-		if ThisComponent.isModified then
-			&apos;if ThisComponent.getURL() = &quot;&quot; then
+		if oFileSaveAs then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
@@ -418,8 +416,7 @@ sub doSetPageBreak
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
-			AddSaveAsThenReloadProperty(thiscomponent)
-			&apos;end if
+			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 			Goto toRun
 		else
 			Goto toRun
@@ -444,7 +441,8 @@ sub doNDCHyperLink
 	oInitial = false
 	oReload = true
 	oDisp = &quot;&quot;
-	if ThisComponent.isModified then
+	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
+	if oFileSaveAs then
 		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎？&quot;
 	else
 		oDisp = oDisp + &quot;確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎？&quot;
@@ -452,8 +450,7 @@ sub doNDCHyperLink
 	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 
 	if ret = 1 then
-		if ThisComponent.isModified then
-			&apos;if ThisComponent.getURL() = &quot;&quot; then
+		if oFileSaveAs then
 			document   = ThisComponent.CurrentController.Frame
 			dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
 			
@@ -463,8 +460,7 @@ sub doNDCHyperLink
 				msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
 				exit sub
 			end if 
-			AddSaveAsThenReloadProperty(thiscomponent)
-			&apos;end if
+			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 			Goto toRun
 		else
 			Goto toRun
