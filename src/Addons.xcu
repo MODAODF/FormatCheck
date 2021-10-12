@@ -25,11 +25,17 @@
 						<prop oor:name="Target" oor:type="xs:string">
 							<value>_self</value>
 						</prop>
+                        <prop oor:name="ImageIdentifier" oor:type="xs:string">
+                            <value>%origin%/icons/01</value>
+                        </prop>
 					</node>
                     <node oor:name="M1002" oor:op="replace">
 						<prop oor:name="Title" oor:type="xs:string">
 							<value xml:lang="en-US">單一格式校正</value>
 						</prop>
+                        <prop oor:name="ImageIdentifier" oor:type="xs:string">
+                            <value>%origin%/icons/02</value>
+                        </prop>
                     <node oor:name="Submenu">
 					<node oor:name="menu01" oor:op="replace"> 
 						<prop oor:name="Context" oor:type="xs:string">
@@ -124,6 +130,9 @@
 						<prop oor:name="Target" oor:type="xs:string">
 							<value>_self</value>
 						</prop>
+                        <prop oor:name="ImageIdentifier" oor:type="xs:string">
+                            <value>%origin%/icons/03</value>
+                        </prop>
                     </node>
                 </node><!-- 手動格式校正 Submenu end -->
 			</node>
