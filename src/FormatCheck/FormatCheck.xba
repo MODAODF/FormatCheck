@@ -99,8 +99,8 @@ sub menuAction
 			end if
 			&apos;AddSaveAsThenReloadProperty(thiscomponent)
 	        Goto toRun
-	        exit sub
 		end if
+		exit sub &apos;if ret != 1&apos;
 	end if
 	Goto toRun
 toRun:
