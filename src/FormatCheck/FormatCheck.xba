@@ -2,15 +2,19 @@
 <!DOCTYPE script:module PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "module.dtd">
 <script:module xmlns:script="http://openoffice.org/2000/script" script:name="FormatCheck" script:language="StarBasic">Public oFormatOptionDialog as object
 Public oApplyCheckDialog as object
-Public oInitial as Boolean
-Public oReload as Boolean
+Global oInfobarUse as Boolean
 Public oMsg as String
-Global oEnabled as Boolean
 Global toApplyCheck as Integer
 Global noeventListener as Boolean
+&apos;Public oInitial as Boolean
+&apos;Public oReload as Boolean
+&apos;Global oEnabled as Boolean
 
 REM 只有在文件啟動時觸發
 sub eventListener(event as com.sun.star.document.DocumentEvent)
+	&apos; init oInfobarUse
+	oInfobarUse = false
+
 	&apos; check noeventListener
 	if noeventListener = true then
 		noeventListener = false
@@ -38,8 +42,15 @@ sub eventListener(event as com.sun.star.document.DocumentEvent)
 	if event.source.getURL() = &quot;&quot; then
 		exit sub
 	end if
-	
-	oInitial = true
+
+	&apos; check OOoName
+	if oFindOOoName() = true then
+		&apos; use infobar
+		oInfobarUse = true
+		exit sub
+	end if
+
+	&apos;oInitial = true
 	Dim ret
 	&apos;msgbox event.EventName
 	if checkModify(event.Source) then
@@ -51,6 +62,31 @@ sub eventListener(event as com.sun.star.document.DocumentEvent)
     oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOptionWraning&quot;)
     oFormatOptionDialog.visible = true
 end sub
+
+function oFindOOoName() as Boolean
+	Dim oSet as Object, oConfigProvider as Object
+	Dim oParm(0) As New com.sun.star.beans.PropertyValue
+	Dim oProvider$, oAccess$
+	Dim OOoName As String
+	Dim oSch As String
+		oProvider = &quot;com.sun.star.configuration.ConfigurationProvider&quot;
+		oAccess   = &quot;com.sun.star.configuration.ConfigurationAccess&quot;
+		oConfigProvider = createUnoService(oProvider)
+		oParm(0).Name = &quot;nodepath&quot;
+		oParm(0).Value = &quot;/org.openoffice.Setup/Product&quot;
+		oSet = oConfigProvider.createInstanceWithArguments(oAccess, oParm())
+		OOoName = oSet.getByName(&quot;ooName&quot;)
+		oSch = &quot;NDC&quot;
+		if InStr(1, OOoName, oSch) &lt;&gt; 0 then
+			oFindOOoName = true
+		else
+			oFindOOoName = false
+		endif
+End function
+
+function _IsRunFormatCheckInfobar() as Boolean
+	_IsRunFormatCheckInfobar = oInfobarUse
+End function
 
 function _IsMsGenerator(vDoc) as Integer
 	Dim oprop
@@ -68,8 +104,14 @@ Sub getExtensionName(vDoc) as String
 	getExtensionName = GetFileNameExtension(oFile)
 End Sub
 
-function _IsFormatCheckOxt() as Boolean
-   	_IsFormatCheckOxte = oEnabled
+function _EnabledFormatCheck() as Boolean
+	oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
+	mEventProps = oGlobalEventBroadcaster.Events.getByName(&quot;OnLoadFinished&quot;)
+	if mEventProps(1).Value = &quot;&quot; then
+		_EnabledFormatCheck = false
+	else
+		_EnabledFormatCheck = true
+	end if
 End function
 
 Sub addFormatCheckEvent
@@ -102,7 +144,7 @@ Sub removeFormatCheckEvent
 	msgbox (&quot;已停用格式修正建議&quot;)
 end sub
 
-Sub FormatCheckEvent
+function FormatCheckEvent() as Boolean
 	oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
 	mEventProps = oGlobalEventBroadcaster.Events.getByName(&quot;OnLoadFinished&quot;)
 	if mEventProps(1).Value = &quot;&quot; then
@@ -112,7 +154,7 @@ Sub FormatCheckEvent
 		removeFormatCheckEvent
 		oEnabled = true
 	end if
-end sub
+End function
 
 sub menuAction
 	if not thiscomponent.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
@@ -320,8 +362,8 @@ sub doReplaceEmpty
 		msgbox &quot;此功能僅支援 Writer&quot;
 		exit sub
 	end if
-	oInitial = false
-	oReload = true
+	&apos;oInitial = false
+	&apos;oReload = true
 	oDisp = &quot;&quot;
 	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
 	if oFileSaveAs then
@@ -367,8 +409,8 @@ sub doDisableGrid
 		msgbox &quot;此功能僅支援 Writer&quot;
 		exit sub
 	end if
-	oInitial = false
-	oReload = true
+	&apos;oInitial = false
+	&apos;oReload = true
 	oDisp = &quot;&quot;
 	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
 	if oFileSaveAs then
@@ -414,8 +456,8 @@ sub doChangeLineSpacing
 		msgbox &quot;此功能僅支援 Writer&quot;
 		exit sub
 	end if
-	oInitial = false
-	oReload = true
+	&apos;oInitial = false
+	&apos;oReload = true
 	oDisp = &quot;&quot;
 	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
 	if oFileSaveAs then
@@ -461,8 +503,8 @@ sub doSetPageBreak
 		msgbox &quot;此功能僅支援 Writer&quot;
 		exit sub
 	end if
-	oInitial = false
-	oReload = true
+	&apos;oInitial = false
+	&apos;oReload = true
 	oDisp = &quot;&quot;
 	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
 	if oFileSaveAs then
@@ -508,8 +550,8 @@ sub doNDCHyperLink
 		msgbox &quot;此功能僅支援 Calc&quot;
 		exit sub
 	end if
-	oInitial = false
-	oReload = true
+	&apos;oInitial = false
+	&apos;oReload = true
 	oDisp = &quot;&quot;
 	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
 	if oFileSaveAs then
