@@ -4,22 +4,31 @@
 Public oApplyCheckDialog as object
 Public oInitial as Boolean
 Public oReload as Boolean
+Public oMsg as String
 Global oEnabled as Boolean
 Global toApplyCheck as Integer
 Global noeventListener as Boolean
 
-
 REM 只有在文件啟動時觸發
 sub eventListener(event as com.sun.star.document.DocumentEvent)
+	&apos; check noeventListener
 	if noeventListener = true then
 		noeventListener = false
 		exit sub
 	end if
+
+	&apos; check document generator
+    if _IsMsGenerator(event.source) &lt;&gt; 1 then
+    	exit sub
+    end if
+    &apos;
 	if checkSaveAsThenReload(event.source) then
 		removeSaveAsThenReloadDocumentProperty(event.source)
 		event.source.store()
 		exit sub
 	end if
+
+	&apos; check document saved
 	if event.source.getURL() = &quot;&quot; then
 		exit sub
 	end if
@@ -33,9 +42,18 @@ sub eventListener(event as com.sun.star.document.DocumentEvent)
 	if not event.source.supportsService(&quot;com.sun.star.text.TextDocument&quot;) then
 		exit sub
 	end if
-    oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+    oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOptionWraning&quot;)
     oFormatOptionDialog.visible = true
 end sub
+
+function _IsMsGenerator(vDoc) as Integer
+	Dim oprop
+	oSch = &quot;Microsoft&quot;
+	&apos;get the Property
+	oprop = vDoc.getDocumentProperties().Generator
+	&apos;msgbox oprop
+	_IsMsGenerator = InStr(1, oprop, oSch)
+End function
 
 Sub addFormatCheckEvent
 	&apos;ret = msgbox (&quot;確定要啟用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
@@ -45,7 +63,6 @@ Sub addFormatCheckEvent
 		mEventProps(0).Value = &quot;StarBasic&quot;
 		mEventProps(1).Name = &quot;Script&quot;
 		mEventProps(1).Value = &quot;vnd.sun.star.script:FormatCheck.FormatCheck.eventListener?language=Basic&amp;location=application&quot;
-		
 		
 		oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
 		oGlobalEventBroadcaster.Events.ReplaceByName(&quot;OnLoadFinished&quot;, mEventProps())
@@ -61,7 +78,6 @@ Sub removeFormatCheckEvent
 		mEventProps(0).Value = &quot;StarBasic&quot;
 		mEventProps(1).Name = &quot;Script&quot;
 		mEventProps(1).Value = &quot;&quot;
-		
 		
 		oGlobalEventBroadcaster = createUnoservice(&quot;com.sun.star.frame.GlobalEventBroadcaster&quot;)
 		oGlobalEventBroadcaster.Events.ReplaceByName(&quot;OnLoadFinished&quot;, mEventProps())
@@ -104,15 +120,24 @@ sub menuAction
 	end if
 	Goto toRun
 toRun:
-	thiscomponent.store()
-	oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
-	oFormatOptionDialog.visible = true
+	&apos;thiscomponent.store()
+	&apos; check document generator
+    if _IsMsGenerator(ThisComponent) &lt;&gt; 1 then
+		oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOption&quot;)
+		oFormatOptionDialog.visible = true
+	else
+		oFormatOptionDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;FormatOptionWraning&quot;)
+		oFormatOptionDialog.visible = true
+    end if
+	
 end sub
 
 sub formatOption(event)
 	checkenablebox = false
 	oDialog = event.source.context
 	oDialog.visible = false
+	oMsgDoNothing = &quot;[未發現]文件中沒有需要校正的格式!&quot;
+	oMsg = &quot;&quot;
 
    	if oDialog.getControl(&quot;paraEmpty&quot;).State = &quot;1&quot; then
    		replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
@@ -137,14 +162,28 @@ sub formatOption(event)
    	if toApplyCheck then
    		if not DialogIsRunning(oApplyCheckDialog) then
    			oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+   			oApplyCheckDialog.getControl(&quot;Result_Label&quot;).Text = oMsg
    		end if
 		oApplyCheckDialog.visible = true
+	else
+		msgbox (oMsgDoNothing, MB_ICONEXCLAMATION, &quot;通知&quot;)
 	end if
+	
 end sub
 
 sub actionApply(event)
 	oDialog_check = event.source.context
 	oDialog_check.visible = false
+	document   = ThisComponent.CurrentController.Frame
+	dispatcher = createUnoService(&quot;com.sun.star.frame.DispatchHelper&quot;)
+	
+	rem ----------------------------------------------------------------------
+	dispatcher.executeDispatch(document, &quot;.uno:SaveAs&quot;, &quot;&quot;, 0, Array())
+	if ThisComponent.getURL() = &quot;&quot; or ThisComponent.isModified then
+		msgbox &quot;請先為檔案選擇一個儲存位置再行使用本功能!&quot;
+		actionReload(event)
+		exit sub
+	end if
 	AddNewDocumentProperty(thiscomponent)
 	thiscomponent.store()
 	toApplyCheck = 0 &apos;init toApplyChec
@@ -293,11 +332,14 @@ sub doReplaceEmpty
 
 	exit sub &apos;if ret != 1&apos;	
 toRun:
-	thiscomponent.store()	
+	&apos;thiscomponent.store()	
 	replaceAllSpaceAsOneTabinParagraphs(thiscomponent)
 	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.getControl(&quot;Result_Label&quot;).Text = oMsg
 		oApplyCheckDialog.visible = true
+	else
+		msgbox (oMsg, MB_ICONEXCLAMATION, &quot;通知&quot;)
 	end if
 end sub
 
@@ -337,11 +379,14 @@ sub doDisableGrid
 
 	exit sub &apos;if ret != 1&apos;
 toRun:
-	thiscomponent.store()	
+	&apos;thiscomponent.store()	
 	disableGrid(thiscomponent)
 	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.getControl(&quot;Result_Label&quot;).Text = oMsg
 		oApplyCheckDialog.visible = true
+	else
+		msgbox (oMsg, MB_ICONEXCLAMATION, &quot;通知&quot;)
 	end if
 end sub
 
@@ -381,11 +426,14 @@ sub doChangeLineSpacing
 
 	exit sub &apos;if ret != 1&apos;
 toRun:
-	thiscomponent.store()	
+	&apos;thiscomponent.store()	
 	changeLineSpacing(thiscomponent)
 	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.getControl(&quot;Result_Label&quot;).Text = oMsg
 		oApplyCheckDialog.visible = true
+	else
+		msgbox (oMsg, MB_ICONEXCLAMATION, &quot;通知&quot;)
 	end if
 end sub
 
@@ -425,11 +473,14 @@ sub doSetPageBreak
 
 	exit sub &apos;if ret != 1
 toRun:
-	thiscomponent.store()
+	&apos;thiscomponent.store()
 	setPageBreak(thiscomponent)
 	if toApplyCheck then
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
+		oApplyCheckDialog.getControl(&quot;Result_Label&quot;).Text = oMsg
 		oApplyCheckDialog.visible = true
+	else
+		msgbox (oMsg, MB_ICONEXCLAMATION, &quot;通知&quot;)
 	end if
 end sub
 
@@ -469,7 +520,7 @@ sub doNDCHyperLink
 
 	exit sub &apos;if ret != 1
 toRun:
-	thiscomponent.store()	
+	&apos;thiscomponent.store()	
 	SetSelectedCells(thiscomponent)
 	if toApplyCheck then	
 		oApplyCheckDialog = LoadModelessDialog(&quot;FormatCheck&quot;, &quot;applyCheck&quot;)
@@ -544,8 +595,10 @@ Sub replaceAllSpaceAsOneTabinParagraphs(vDoc)
   Loop
   if changeflag then
      toApplyCheck = toApplyCheck + 1
+     oMsg = oMsg + &quot;[修正]段落開頭空白字元為Tab&quot; &amp; Chr$(10)
   else
-     msgbox &quot;文件中未發現段落開頭空白字元!&quot;
+	oMsg = oMsg + &quot;[未發現]文件中未發現段落開頭空白字元!&quot; &amp; Chr$(10)
+    &apos;msgbox &quot;文件中未發現段落開頭空白字元!&quot;
   end if
 End Sub
 
@@ -587,8 +640,10 @@ Sub changeLineSpacing(vDoc)
 
   if changeflag then
   	toApplyCheck = toApplyCheck + 1
+  	oMsg = oMsg + &quot;[修正]段落為單行行距&quot; &amp; Chr$(10)
   else
-  	msgbox &quot;文件中段落設定都是單行行距!&quot;
+  	oMsg = oMsg + &quot;[未發現]文件中段落設定都是單行行距!&quot; &amp; Chr$(10)
+  	&apos;msgbox &quot;文件中段落設定都是單行行距!&quot;
   end if
 end sub
 
@@ -608,8 +663,10 @@ Sub disableGrid(vDoc)
     if oStyle.GridMode = 1 or oStyle.GridMode = 2 then
 	   	oStyle.GridMode = 0
 	   	toApplyCheck = toApplyCheck + 1
+	   	oMsg = oMsg + &quot;[修正]網格設定&quot; &amp; Chr$(10)
 	else
-		msgbox &quot;文件中未發現有網格!&quot;
+		oMsg = oMsg + &quot;[未發現]文件中未發現有網格!&quot; &amp; Chr$(10)
+		&apos;msgbox &quot;文件中未發現有網格!&quot;
 	end if
 End Sub
 
@@ -692,8 +749,10 @@ Sub setPageBreak(vDoc)
     End If
   Loop
   if allnone then
-	msgbox &quot;文件中未發現有 Enter 換頁情形!&quot;
+  	oMsg = oMsg + &quot;[未發現]文件中未發現有 Enter 換頁情形!&quot; &amp; Chr$(10)
+	&apos;msgbox &quot;文件中未發現有 Enter 換頁情形!&quot;
   else
+  	oMsg = oMsg + &quot;[修正] Enter 換頁&quot; &amp; Chr$(10)
   	toApplyCheck = toApplyCheck + 1
   end if
 End Sub

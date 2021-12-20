@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="FormatOption" dlg:left="300" dlg:top="79" dlg:width="156" dlg:height="132" dlg:closeable="true" dlg:moveable="true" dlg:title="選擇套用的修正選項">
+ <dlg:styles>
+  <dlg:style dlg:style-id="0" dlg:border="none"/>
+ </dlg:styles>
+ <dlg:bulletinboard>
+  <dlg:button dlg:id="cancel" dlg:tab-index="3" dlg:left="84" dlg:top="101" dlg:width="62" dlg:height="22" dlg:value="取消" dlg:button-type="cancel"/>
+  <dlg:button dlg:id="Apply" dlg:tab-index="2" dlg:left="10" dlg:top="101" dlg:width="62" dlg:height="22" dlg:value="套用">
+   <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:FormatCheck.FormatCheck.formatOption?language=Basic&amp;location=application" script:language="Script"/>
+  </dlg:button>
+  <dlg:checkbox dlg:id="disableGrid" dlg:tab-index="1" dlg:left="12" dlg:top="47" dlg:width="65" dlg:height="14" dlg:value="取消格線" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="paraEmpty" dlg:tab-index="0" dlg:left="12" dlg:top="31" dlg:width="79" dlg:height="14" dlg:value="取代段落開頭的空白" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="pageBreak" dlg:tab-index="4" dlg:left="12" dlg:top="63" dlg:width="80" dlg:height="14" dlg:value="以換頁符取代 Enter 換頁" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="lineSpace" dlg:tab-index="5" dlg:left="12" dlg:top="79" dlg:width="80" dlg:height="14" dlg:value="單行行距" dlg:valign="center" dlg:checked="true"/>
+  <dlg:text dlg:id="Label1" dlg:tab-index="6" dlg:left="39" dlg:top="9" dlg:width="106" dlg:height="19" dlg:value="偵測到異常排版，&#x0a;可能為非原生ODF軟體製作、轉存導致"/>
+  <dlg:img dlg:style-id="0" dlg:id="ImageControl1" dlg:tab-index="7" dlg:left="11" dlg:top="7" dlg:width="23" dlg:height="19" dlg:src="vnd.sun.star.extension://tw.ossii.formatcheck/icons/warning.svg"/>
+ </dlg:bulletinboard>
+</dlg:window>
