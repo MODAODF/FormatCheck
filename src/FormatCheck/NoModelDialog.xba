@@ -59,6 +59,7 @@ Function FormatCheck_TopWindow_windowClosing(e as com.sun.star.lang.EventObject)
 	end if
 	AddNewDocumentProperty(thiscomponent)
 	thiscomponent.store()
+	noeventListener = true
 End Function
 
 Function FormatCheck_TopWindow_windowDeactivated(e as com.sun.star.lang.EventObject)

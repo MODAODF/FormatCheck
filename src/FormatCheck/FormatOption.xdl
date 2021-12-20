@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE dlg:window PUBLIC "-//OpenOffice.org//DTD OfficeDocument 1.0//EN" "dialog.dtd">
-<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="FormatOption" dlg:left="300" dlg:top="100" dlg:width="156" dlg:height="108" dlg:closeable="true" dlg:moveable="true" dlg:title="選擇套用的修正選項">
+<dlg:window xmlns:dlg="http://openoffice.org/2000/dialog" xmlns:script="http://openoffice.org/2000/script" dlg:id="FormatOption" dlg:left="302" dlg:top="100" dlg:width="155" dlg:height="116" dlg:closeable="true" dlg:moveable="true" dlg:title="選擇套用的修正選項">
  <dlg:bulletinboard>
-  <dlg:button dlg:id="cancel" dlg:tab-index="3" dlg:left="84" dlg:top="80" dlg:width="62" dlg:height="22" dlg:value="取消" dlg:button-type="cancel"/>
-  <dlg:button dlg:id="Apply" dlg:tab-index="2" dlg:left="10" dlg:top="80" dlg:width="62" dlg:height="22" dlg:value="套用">
+  <dlg:button dlg:id="cancel" dlg:tab-index="3" dlg:left="85" dlg:top="88" dlg:width="62" dlg:height="22" dlg:value="取消" dlg:button-type="cancel"/>
+  <dlg:button dlg:id="Apply" dlg:tab-index="2" dlg:left="8" dlg:top="88" dlg:width="62" dlg:height="22" dlg:value="套用">
    <script:event script:event-name="on-performaction" script:macro-name="vnd.sun.star.script:FormatCheck.FormatCheck.formatOption?language=Basic&amp;location=application" script:language="Script"/>
   </dlg:button>
-  <dlg:checkbox dlg:id="disableGrid" dlg:tab-index="1" dlg:left="12" dlg:top="26" dlg:width="65" dlg:height="14" dlg:value="取消格線" dlg:valign="center" dlg:checked="true"/>
-  <dlg:checkbox dlg:id="paraEmpty" dlg:tab-index="0" dlg:left="12" dlg:top="10" dlg:width="79" dlg:height="14" dlg:value="取代段落開頭的空白" dlg:valign="center" dlg:checked="true"/>
-  <dlg:checkbox dlg:id="pageBreak" dlg:tab-index="4" dlg:left="12" dlg:top="42" dlg:width="80" dlg:height="14" dlg:value="以換頁符取代 Enter 換頁" dlg:valign="center" dlg:checked="true"/>
-  <dlg:checkbox dlg:id="lineSpace" dlg:tab-index="5" dlg:left="12" dlg:top="58" dlg:width="80" dlg:height="14" dlg:value="單行行距" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="disableGrid" dlg:tab-index="1" dlg:left="10" dlg:top="20" dlg:width="65" dlg:height="14" dlg:value="取消格線" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="paraEmpty" dlg:tab-index="0" dlg:left="10" dlg:top="4" dlg:width="79" dlg:height="14" dlg:value="取代段落開頭的空白" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="pageBreak" dlg:tab-index="4" dlg:left="10" dlg:top="36" dlg:width="80" dlg:height="14" dlg:value="以換頁符取代 Enter 換頁" dlg:valign="center" dlg:checked="true"/>
+  <dlg:checkbox dlg:id="lineSpace" dlg:tab-index="5" dlg:left="10" dlg:top="52" dlg:width="80" dlg:height="14" dlg:value="單行行距" dlg:valign="center" dlg:checked="true"/>
+  <dlg:text dlg:id="Label1" dlg:tab-index="6" dlg:left="8" dlg:top="66" dlg:width="142" dlg:height="17" dlg:value="如欲停用此格式檢查，請至【功能列&gt;格式校正工具&gt;啟用/停用修正建議】進行設定切換&#x0a;" dlg:multiline="true"/>
  </dlg:bulletinboard>
 </dlg:window>

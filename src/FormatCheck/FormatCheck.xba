@@ -68,6 +68,10 @@ Sub getExtensionName(vDoc) as String
 	getExtensionName = GetFileNameExtension(oFile)
 End Sub
 
+function _IsFormatCheckOxt() as Boolean
+   	_IsFormatCheckOxte = oEnabled
+End function
+
 Sub addFormatCheckEvent
 	&apos;ret = msgbox (&quot;確定要啟用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 	&apos;if ret = 1 then
@@ -203,9 +207,9 @@ sub actionApply(event)
 end sub
 
 sub actionReload(event)
-	if toApplyCheck then
+	&apos;if toApplyCheck then
 		noeventListener = true
-	end if
+	&apos;end if
 	oDialog_check = event.source.context
 	oDialog_check.visible = false
 	thiscomponent.setModified(False)  &apos;Ignore changes&apos;
@@ -220,7 +224,7 @@ sub actionReload(event)
 	&apos;end if
 	AddNewDocumentProperty(thiscomponent)
 	thiscomponent.store()
-	toApplyCheck = 0 &apos;init toApplyChec
+	toApplyCheck = 0 &apos;init toApplyCheck
 end sub
 
 sub testtest
