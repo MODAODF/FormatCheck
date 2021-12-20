@@ -17,11 +17,17 @@ sub eventListener(event as com.sun.star.document.DocumentEvent)
 		exit sub
 	end if
 
+	&apos; check document extension_name
+    if getExtensionName(event.source) = &quot;docx&quot; or getExtensionName(event.source) = &quot;doc&quot;then
+    	exit sub
+    end if
+
 	&apos; check document generator
     if _IsMsGenerator(event.source) &lt;&gt; 1 then
     	exit sub
     end if
-    &apos;
+
+    &apos; 
 	if checkSaveAsThenReload(event.source) then
 		removeSaveAsThenReloadDocumentProperty(event.source)
 		event.source.store()
@@ -54,6 +60,13 @@ function _IsMsGenerator(vDoc) as Integer
 	&apos;msgbox oprop
 	_IsMsGenerator = InStr(1, oprop, oSch)
 End function
+
+Sub getExtensionName(vDoc) as String
+	oArgs = vDoc.getArgs()
+	GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
+	oFile = oArgs(0).Value
+	getExtensionName = GetFileNameExtension(oFile)
+End Sub
 
 Sub addFormatCheckEvent
 	&apos;ret = msgbox (&quot;確定要啟用格式修正建議嗎&quot;, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
@@ -205,6 +218,8 @@ sub actionReload(event)
 	&apos;	end if
 	&apos;	oFormatOptionDialog.visible = true
 	&apos;end if
+	AddNewDocumentProperty(thiscomponent)
+	thiscomponent.store()
 	toApplyCheck = 0 &apos;init toApplyChec
 end sub
 
