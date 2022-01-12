@@ -22,7 +22,7 @@ sub eventListener(event as com.sun.star.document.DocumentEvent)
 	end if
 
 	&apos; check document extension_name
-    if getExtensionName(event.source) = &quot;docx&quot; or getExtensionName(event.source) = &quot;doc&quot;then
+    if getExtensionName(event.source) = &quot;docx&quot; or getExtensionName(event.source) = &quot;doc&quot; then
     	exit sub
     end if
 
@@ -89,12 +89,16 @@ function _IsRunFormatCheckInfobar() as Boolean
 End function
 
 function _IsMsGenerator(vDoc) as Integer
+	On Error Goto ErrorHandler
 	Dim oprop
 	oSch = &quot;Microsoft&quot;
 	&apos;get the Property
 	oprop = vDoc.getDocumentProperties().Generator
 	&apos;msgbox oprop
 	_IsMsGenerator = InStr(1, oprop, oSch)
+
+	ErrorHandler:
+		exit function
 End function
 
 Sub getExtensionName(vDoc) as String
@@ -102,6 +106,7 @@ Sub getExtensionName(vDoc) as String
 	GlobalScope.BasicLibraries.LoadLibrary(&quot;Tools&quot;)
 	oFile = oArgs(0).Value
 	getExtensionName = GetFileNameExtension(oFile)
+
 End Sub
 
 function _EnabledFormatCheck() as Boolean
@@ -289,72 +294,97 @@ sub testtest
 end sub
 
 function AddNewDocumentProperty(vDoc)
-  Dim oUDP
-  oUDP = vDoc.getDocumentProperties().UserDefinedProperties
-  If NOT oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
-    oUDP.addProperty(&quot;FormatCheck&quot;, _
-      com.sun.star.beans.PropertyAttribute.MAYBEVOID + _
-      com.sun.star.beans.PropertyAttribute.REMOVEABLE + _
-      com.sun.star.beans.PropertyAttribute.MAYBEDEFAULT, _
-      True)
-  End If
+	On Error Goto ErrorHandler
+  	Dim oUDP
+  	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  	If NOT oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
+    	oUDP.addProperty(&quot;FormatCheck&quot;, _
+      	com.sun.star.beans.PropertyAttribute.MAYBEVOID + _
+      	com.sun.star.beans.PropertyAttribute.REMOVEABLE + _
+      	com.sun.star.beans.PropertyAttribute.MAYBEDEFAULT, _
+      	True)
+  	End If
+
+	ErrorHandler:
+		exit function
 End function
 
 function AddSaveAsThenReloadProperty(vDoc)
-  Dim oUDP
-  oUDP = vDoc.getDocumentProperties().UserDefinedProperties
-  If NOT oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
-    oUDP.addProperty(&quot;SaveAsThenReload&quot;, _
-      com.sun.star.beans.PropertyAttribute.MAYBEVOID + _
-      com.sun.star.beans.PropertyAttribute.REMOVEABLE + _
-      com.sun.star.beans.PropertyAttribute.MAYBEDEFAULT, _
-      True)
-  End If
+	On Error Goto ErrorHandler
+  	Dim oUDP
+  	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  	If NOT oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
+    	oUDP.addProperty(&quot;SaveAsThenReload&quot;, _
+      	com.sun.star.beans.PropertyAttribute.MAYBEVOID + _
+      	com.sun.star.beans.PropertyAttribute.REMOVEABLE + _
+      	com.sun.star.beans.PropertyAttribute.MAYBEDEFAULT, _
+      	True)
+  	End If
+
+	ErrorHandler:
+		exit function
 End function 
 
 function removeSaveAsThenReloadDocumentProperty(vDoc)
-  Dim oUDP
-  oUDP = vDoc.getDocumentProperties().UserDefinedProperties
-  If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
-    oUDP.removeProperty(&quot;SaveAsThenReload&quot;)
-  End If
+	On Error Goto ErrorHandler
+  	Dim oUDP
+  	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
+  	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
+    	oUDP.removeProperty(&quot;SaveAsThenReload&quot;)
+  	End If
+
+	ErrorHandler:
+		exit function
 End function 
 
 sub testReloadProperty()
+	On Error Goto ErrorHandler
 	Dim oUDP
-	
   	oUDP = thiscomponent.getDocumentProperties().UserDefinedProperties
   	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
   		msgbox &quot;has&quot;
   	end if
+	ErrorHandler:
+		exit sub
 end sub
 
 function checkSaveAsThenReload(vDoc)
+	On Error Goto ErrorHandler
 	Dim oUDP
 	checkSaveAsThenReload = False
   	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
   	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;SaveAsThenReload&quot;) Then
   		checkSaveAsThenReload = True
   	end if
+	
+	ErrorHandler:
+		exit function
 end function
 
 function removeDocumentProperty()
-  Dim oUDP
-  oUDP = ThisComponent.getDocumentProperties().UserDefinedProperties
-  If oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
-    oUDP.removeProperty(&quot;FormatCheck&quot;)
-  else
-  	msgbox &quot;已移除文件特性&quot;
-  End If
+	On Error Goto ErrorHandler
+  	Dim oUDP
+  	oUDP = ThisComponent.getDocumentProperties().UserDefinedProperties
+  	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
+    	oUDP.removeProperty(&quot;FormatCheck&quot;)
+  	else
+  		msgbox &quot;已移除文件特性&quot;
+  	End If
+
+	ErrorHandler:
+		exit function
 End function 
 
 function checkModify(vDoc)
+	On Error Goto ErrorHandler
 	Dim oUDP
 	checkModify = False
   	oUDP = vDoc.getDocumentProperties().UserDefinedProperties
   	If oUDP.getPropertySetInfo().hasPropertyByName(&quot;FormatCheck&quot;) Then
   		checkModify = True
   	end if
+	ErrorHandler:
+		exit function
 end function
 
 sub doReplaceEmpty
