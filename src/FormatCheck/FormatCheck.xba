@@ -76,7 +76,7 @@ function oFindOOoName() as Boolean
 		oParm(0).Value = &quot;/org.openoffice.Setup/Product&quot;
 		oSet = oConfigProvider.createInstanceWithArguments(oAccess, oParm())
 		OOoName = oSet.getByName(&quot;ooName&quot;)
-		oSch = &quot;NDC&quot;
+		oSch = &quot;MODA&quot;
 		if InStr(1, OOoName, oSch) &lt;&gt; 0 then
 			oFindOOoName = true
 		else
@@ -575,7 +575,7 @@ toRun:
 	end if
 end sub
 
-sub doNDCHyperLink
+sub doMODAHyperLink
 	if not thiscomponent.supportsService(&quot;com.sun.star.sheet.SpreadsheetDocument&quot;) then
 		msgbox &quot;此功能僅支援 Calc&quot;
 		exit sub
@@ -585,9 +585,9 @@ sub doNDCHyperLink
 	oDisp = &quot;&quot;
 	oFileSaveAs = ThisComponent.isModified or ThisComponent.getURL() = &quot;&quot;
 	if oFileSaveAs then
-		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎？&quot;
+		oDisp = oDisp + &quot;使用此功能前必須先存檔，確定要套用以 MODA 超連結取代選取範圍的內建超連結嗎？&quot;
 	else
-		oDisp = oDisp + &quot;確定要套用以 NDC 超連結取代選取範圍的內建超連結嗎？&quot;
+		oDisp = oDisp + &quot;確定要套用以 MODA 超連結取代選取範圍的內建超連結嗎？&quot;
 	end if
 	ret = msgbox (oDisp, MB_OKCANCEL + MB_DEFBUTTON2 + MB_ICONQUESTION, &quot;確認&quot;)
 

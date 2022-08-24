@@ -100,10 +100,10 @@
 							<value>com.sun.star.sheet.SpreadsheetDocument</value>
 						</prop>
 						<prop oor:name="Title" oor:type="xs:string">
-							<value>以 NDC 超連結取代選取範圍的內建超連結</value>
+							<value>以 MODA 超連結取代選取範圍的內建超連結</value>
 						</prop>
 						<prop oor:name="URL" oor:type="xs:string">
-							<value>vnd.sun.star.script:FormatCheck.FormatCheck.doNDCHyperLink?language=Basic&amp;location=application</value>
+							<value>vnd.sun.star.script:FormatCheck.FormatCheck.doMODAHyperLink?language=Basic&amp;location=application</value>
 						</prop>
 						<prop oor:name="Target" oor:type="xs:string">
 							<value>_self</value>
